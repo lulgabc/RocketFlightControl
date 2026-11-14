@@ -1,0 +1,168 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { PHASES, TOTAL_CHECKPOINTS } from "../data/roadmap";
+
+const totalWeeks = "18–24 个月 · 每周 8–10 小时";
+---
+
+<BaseLayout
+  title="七阶段学习路线图"
+  description="火箭飞控七阶段学习路线：数学地基、六自由度建模、控制理论、导航估计与制导、嵌入式飞控、系统验证与安全、进阶 GNC。含 42 个可保存进度的能力检查点。"
+  current="/roadmap/"
+>
+  <section class="page-hero">
+    <div class="container">
+      <div class="page-hero-top">
+        <span class="dot"></span>
+        <span>Roadmap / 00 — 06</span>
+      </div>
+      <h1>从方程到飞行，<br />一步一步来。</h1>
+      <p>
+        这条路线按“可交付产物”推进，而不是按教材章节。每个阶段给出目标、主题、必须做出的东西和自检清单。
+        勾选检查点会保存在你的浏览器里——不需要账号，也不会上传。
+      </p>
+      <div class="page-hero-meta">
+        <span>总周期 <b>{totalWeeks}</b></span>
+        <span>检查点 <b>{TOTAL_CHECKPOINTS} 项</b></span>
+        <span>阶段合计 <b>42–58 周</b></span>
+        <span>前置 <b>微积分 · 线代 · 一门编程语言</b></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="roadmap-bar">
+    <div class="container roadmap-bar-inner">
+      <div class="progress-wrap">
+        <span class="progress-label" data-progress-label>0 / {TOTAL_CHECKPOINTS}</span>
+        <div class="progress-track" role="progressbar" aria-label="总学习进度" aria-valuemin="0" aria-valuemax={TOTAL_CHECKPOINTS} aria-valuenow="0" data-progress-track>
+          <span class="progress-fill" data-progress-fill></span>
+        </div>
+      </div>
+      <nav class="phase-nav" aria-label="阶段导航">
+        {PHASES.map((phase) => (
+          <a href={`#${phase.id}`}>P{phase.index}</a>
+        ))}
+      </nav>
+      <button class="reset-btn" type="button" data-progress-reset>重置</button>
+    </div>
+  </div>
+
+  <div class="container">
+    {PHASES.map((phase) => (
+      <section class="phase-section" id={phase.id}>
+        <div class="phase-layout">
+          <aside class="phase-aside">
+            <div class="phase-index-big" aria-hidden="true">{phase.index}</div>
+            <h2>{phase.title}</h2>
+            <span class="en">{phase.en}</span>
+            <dl>
+              <div>
+                <dt>建议周期</dt>
+                <dd>{phase.weeks}</dd>
+              </div>
+              <div>
+                <dt>难度</dt>
+                <dd>{phase.level}</dd>
+              </div>
+              <div>
+                <dt>阶段产物</dt>
+                <dd>{phase.deliverable.title}</dd>
+              </div>
+              <div>
+                <dt>检查点</dt>
+                <dd>{phase.checkpoints.length} 项</dd>
+              </div>
+            </dl>
+            <div class="aside-progress">
+              <div class="progress-label">
+                <span>阶段进度</span>
+                <span data-phase-label={phase.id}>0 / {phase.checkpoints.length}</span>
+              </div>
+              <div class="progress-track">
+                <span class="progress-fill" data-phase-fill={phase.id}></span>
+              </div>
+            </div>
+          </aside>
+
+          <div class="phase-body">
+            <div class="phase-goal">
+              <span>阶段目标</span>
+              {phase.goal}
+            </div>
+
+            <div class="block-title">核心主题</div>
+            <div class="topics-grid">
+              {phase.topics.map((topic) => (
+                <div class="topic">
+                  <b>{topic.name}</b>
+                  <span>{topic.note}</span>
+                </div>
+              ))}
+            </div>
+
+            <div class="block-title">阶段产物</div>
+            <div class="deliverable">
+              <div class="deliverable-head">
+                <span class="tag">DELIVERABLE</span>
+                <h4>{phase.deliverable.title}</h4>
+              </div>
+              <div class="deliverable-body">
+                <p>{phase.deliverable.detail}</p>
+                <div class="pass-title">验收标准</div>
+                <ul class="tick-list">
+                  {phase.deliverable.pass.map((item) => (
+                    <li>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div class="block-title">能力检查点 · 点击勾选并自动保存</div>
+            <div class="check-list">
+              {phase.checkpoints.map((checkpoint, index) => (
+                <label class="check">
+                  <input
+                    type="checkbox"
+                    data-checkpoint={`${phase.id}:${index}`}
+                    aria-label={checkpoint}
+                  />
+                  <span>{checkpoint}</span>
+                  <span class="idx">{String(index + 1).padStart(2, "0")}</span>
+                </label>
+              ))}
+            </div>
+
+            <div class="block-title">推荐入口</div>
+            <div class="resource-chips">
+              {phase.resources.map((resource) => (
+                resource.href ? (
+                  <a
+                    class="resource-chip"
+                    href={resource.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {resource.label}
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
+                      <path d="M4 2h6v6M10 2 2 10"></path>
+                    </svg>
+                  </a>
+                ) : (
+                  <span class="resource-chip">{resource.label}</span>
+                )
+              ))}
+            </div>
+
+            <div class="exit-note">
+              <b>出阶段标准：</b>{phase.exit}
+            </div>
+          </div>
+        </div>
+      </section>
+    ))}
+  </div>
+
+  <script>
+    import "../scripts/progress";
+  </script>
+</BaseLayout>

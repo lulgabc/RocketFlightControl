@@ -1,0 +1,292 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="交互工具箱"
+  description="三个火箭飞控常用估算工具：齐奥尔科夫斯基 Δv 计算器、ISA 标准大气与动压计算器、单轴姿态 PID 阶跃响应模拟器。全部在浏览器本地运行。"
+  current="/toolkit/"
+>
+  <section class="page-hero">
+    <div class="container">
+      <div class="page-hero-top">
+        <span class="dot"></span>
+        <span>Toolkit / run locally</span>
+      </div>
+      <h1>先算数量级，<br />再写控制器。</h1>
+      <p>
+        三个最常用的小工具：推进性能、大气环境与单轴控制。它们不替代六自由度仿真，
+        但能在你运行大程序之前，快速判断参数是否离谱。所有计算都在浏览器本地完成。
+      </p>
+      <div class="page-hero-meta">
+        <span>工具 <b>3 个</b></span>
+        <span>依赖 <b>无后端 · 无追踪</b></span>
+        <span>适用 <b>概念设计与教学</b></span>
+        <span>注意 <b>结果不含重力与气动损失（除注明外）</b></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="tool-layout">
+        <article class="tool" id="delta-v">
+          <div class="tool-head">
+            <span class="num">01</span>
+            <h2>齐奥尔科夫斯基 Δv</h2>
+          </div>
+          <div class="tool-body">
+            <p class="tool-desc">
+              由比冲、起飞质量与推进剂质量估算理想速度增量。它假设无重力、无气动、无推力损失，
+              因此是性能上限，不是入轨能力。
+            </p>
+            <div class="field-grid three">
+              <div class="field">
+                <label for="dv-isp">比冲 Isp (s)</label>
+                <input id="dv-isp" type="number" min="50" max="500" step="1" value="220" inputmode="decimal" />
+                <span class="field-hint">固体 200–250，煤油 280–320，氢氧 420–460</span>
+              </div>
+              <div class="field">
+                <label for="dv-m0">起飞质量 m₀ (kg)</label>
+                <input id="dv-m0" type="number" min="1" step="0.1" value="120" inputmode="decimal" />
+              </div>
+              <div class="field">
+                <label for="dv-prop">推进剂质量 (kg)</label>
+                <input id="dv-prop" type="number" min="0" step="0.1" value="92" inputmode="decimal" />
+                <span class="field-hint">必须小于起飞质量</span>
+              </div>
+            </div>
+            <div class="calc-out">
+              <div class="calc-item">
+                <span>干质量 m_f</span>
+                <b data-dv="mf">—</b>
+              </div>
+              <div class="calc-item">
+                <span>质量比 m₀/m_f</span>
+                <b data-dv="ratio">—</b>
+              </div>
+              <div class="calc-item">
+                <span>有效排气速度 v_e</span>
+                <b data-dv="ve">—</b>
+              </div>
+              <div class="calc-item">
+                <span>理想 Δv</span>
+                <b data-dv="dv">—</b>
+              </div>
+              <div class="calc-item">
+                <span>推进剂质量分数</span>
+                <b data-dv="frac">—</b>
+              </div>
+              <div class="calc-item">
+                <span>达到 9.4 km/s 所需质量比</span>
+                <b data-dv="leo">—</b>
+              </div>
+            </div>
+            <details class="tech">
+              <summary>公式与适用边界</summary>
+              <p class="formula">Δv = Isp · g₀ · ln(m₀ / m_f)</p>
+              <p>
+                其中 g₀ = 9.80665 m/s²，m_f = m₀ − m_prop。真实飞行还要减去重力损失、气动损失、
+                推力矢量损失与余量；小型探空火箭的重力损失常达到理想 Δv 的 10–25%。
+              </p>
+            </details>
+          </div>
+        </article>
+
+        <aside class="tool-side">
+          <div class="side-note">
+            <h3>怎么读这个数</h3>
+            <p>
+              Δv 是“预算”，不是“高度”。同样 3 km/s，垂直发射会几乎全部消耗在重力上；
+              水平加速则更接近入轨所需。先明确任务剖面，再谈 Δv 够不够。
+            </p>
+          </div>
+          <div class="side-note">
+            <h3>结构系数</h3>
+            <p>
+              小型固体火箭的干质量分数常在 30–50%，液体火箭可低至 10–20%。
+              质量比每提高一点，Δv 按对数增长——这就是为什么减重比加燃料更有效。
+            </p>
+          </div>
+          <div class="side-note">
+            <h3>不要用它设计发动机</h3>
+            <p>
+              这里没有燃烧室压力、喷管面积比、推力曲线与结构载荷。发动机设计请使用推进教材与专业工具。
+            </p>
+          </div>
+        </aside>
+
+        <article class="tool" id="atmosphere">
+          <div class="tool-head">
+            <span class="num">02</span>
+            <h2>ISA 标准大气与动压</h2>
+          </div>
+          <div class="tool-body">
+            <p class="tool-desc">
+              输入几何高度与飞行速度，得到标准大气温度、压力、密度、声速，以及动压和马赫数。
+              用于快速检查最大动压、气动加热与结构载荷的量级。
+            </p>
+            <div class="field-grid">
+              <div class="field">
+                <label for="at-alt">高度 (m)</label>
+                <input id="at-alt" type="number" min="0" max="84852" step="100" value="1000" inputmode="decimal" />
+                <span class="field-hint">0–84 852 m · 国际标准大气</span>
+              </div>
+              <div class="field">
+                <label for="at-vel">速度 (m/s)</label>
+                <input id="at-vel" type="number" min="0" step="10" value="250" inputmode="decimal" />
+                <span class="field-hint">相对气流速度，不是地速</span>
+              </div>
+            </div>
+            <div class="calc-out">
+              <div class="calc-item">
+                <span>温度</span>
+                <b data-at="t">—</b>
+              </div>
+              <div class="calc-item">
+                <span>压力</span>
+                <b data-at="p">—</b>
+              </div>
+              <div class="calc-item">
+                <span>密度</span>
+                <b data-at="rho">—</b>
+              </div>
+              <div class="calc-item">
+                <span>声速</span>
+                <b data-at="a">—</b>
+              </div>
+              <div class="calc-item">
+                <span>动压 q</span>
+                <b data-at="q">—</b>
+              </div>
+              <div class="calc-item">
+                <span>马赫数</span>
+                <b data-at="mach">—</b>
+              </div>
+            </div>
+            <details class="tech">
+              <summary>模型说明</summary>
+              <p>
+                采用 ISA 分层温度模型与理想气体关系：p = ρRT，a = √(γRT)，q = ½ρv²。
+                79 km 以上只给近似值；真实大气还受纬度、季节与天气影响，飞行前应使用当日探空数据。
+              </p>
+            </details>
+          </div>
+        </article>
+
+        <aside class="tool-side">
+          <div class="side-note">
+            <h3>最大动压</h3>
+            <p>
+              动压峰值通常出现在跨声速附近，是箭体弯曲、舵面载荷与气动加热的关键设计点。
+              它由“速度上升”和“密度下降”的竞争决定，不是简单的起飞时刻。
+            </p>
+          </div>
+          <div class="side-note">
+            <h3>马赫数不是速度</h3>
+            <p>
+              同样 300 m/s，在海平面是亚声速，在 15 km 已接近马赫 1。
+              跨声速区气动系数剧烈变化，控制设计必须显式处理。
+            </p>
+          </div>
+          <div class="side-note">
+            <h3>教学用途</h3>
+            <p>
+              这里不包含风、湍流、真实气体效应与非标准大气。用于建立直觉，不用于适航或安全关键计算。
+            </p>
+          </div>
+        </aside>
+
+        <article class="tool tool-wide" id="pid">
+          <div class="tool-head">
+            <span class="num">03</span>
+            <h2>单轴姿态 PID 模拟器</h2>
+          </div>
+          <div class="tool-body">
+            <p class="tool-desc">
+              一个教学用单轴刚体：惯量 J = 1、阻尼 0.15、执行机构一阶延迟、常值扰动 0.05 N·m，
+              并叠加可调测量噪声。拖动滑块观察超调、调节时间、饱和占比与噪声放大。它演示的是结构，不是飞行参数。
+            </p>
+
+            <div class="pid-stage">
+              <div>
+                <div class="pid-canvas-wrap">
+                  <canvas data-pid-canvas aria-label="姿态角与力矩随时间变化的曲线"></canvas>
+                  <div class="pid-legend">
+                    <span class="l1"><i></i>姿态角 θ</span>
+                    <span class="l2"><i></i>控制力矩 τ</span>
+                  </div>
+                </div>
+                <div class="pid-controls">
+                  <button class="btn btn-ghost btn-sm" type="button" data-pid-toggle>暂停</button>
+                  <button class="btn btn-ghost btn-sm" type="button" data-pid-reset>重置</button>
+                  <span class="tag" data-pid-clock>T+ 0.0 s</span>
+                </div>
+              </div>
+
+              <div class="pid-stats">
+                <div class="pid-stat"><span>当前角度</span><b data-pid="theta">—</b></div>
+                <div class="pid-stat"><span>超调</span><b data-pid="overshoot">—</b></div>
+                <div class="pid-stat"><span>调节时间 ±2%</span><b data-pid="settle">—</b></div>
+                <div class="pid-stat"><span>稳态误差</span><b data-pid="error">—</b></div>
+                <div class="pid-stat"><span>RMS 力矩</span><b data-pid="rms">—</b></div>
+                <div class="pid-stat"><span>饱和占比</span><b data-pid="sat">—</b></div>
+              </div>
+            </div>
+
+            <div class="field-grid" style="margin-top: 18px;">
+              <div class="slider-field">
+                <label for="pid-kp">Kp</label>
+                <input id="pid-kp" type="range" min="0.5" max="12" step="0.1" value="8" />
+                <output data-out="kp">8.0</output>
+              </div>
+              <div class="slider-field">
+                <label for="pid-ki">Ki</label>
+                <input id="pid-ki" type="range" min="0" max="3" step="0.05" value="1.5" />
+                <output data-out="ki">1.50</output>
+              </div>
+              <div class="slider-field">
+                <label for="pid-kd">Kd</label>
+                <input id="pid-kd" type="range" min="0" max="6" step="0.1" value="5" />
+                <output data-out="kd">5.0</output>
+              </div>
+              <div class="slider-field">
+                <label for="pid-target">目标角</label>
+                <input id="pid-target" type="range" min="10" max="60" step="1" value="30" />
+                <output data-out="target">30°</output>
+              </div>
+              <div class="slider-field">
+                <label for="pid-noise">噪声</label>
+                <input id="pid-noise" type="range" min="0" max="1" step="0.05" value="0.1" />
+                <output data-out="noise">0.10°</output>
+              </div>
+              <div class="slider-field">
+                <label for="pid-limit">力矩限幅</label>
+                <input id="pid-limit" type="range" min="1" max="6" step="0.1" value="4" />
+                <output data-out="limit">4.0</output>
+              </div>
+            </div>
+
+            <details class="tech">
+              <summary>控制律与仿真假设</summary>
+              <p class="formula">τ = Kp·e + Ki∫e dt − Kd·ω，e = θ_target − θ_meas</p>
+              <p>
+                执行机构：一阶延迟 40 ms；刚体：θ̈ = (τ + τ_d − bω)/J；积分项在输出饱和且误差同号时停止累积，
+                并在 |e| &gt; 7° 时暂停积分（积分分离），避免阶跃初期把积分项推得过高。
+                控制周期 5 ms，曲线窗口 12 s。噪声只加到测量值上，不进入真实状态。
+              </p>
+              <p>
+                这是“单轴、线性、无气动耦合”的最小模型。真实火箭还面临质心漂移、推力偏心、结构弯曲、
+                传感器动态与执行机构回差，务必在六自由度模型和台架上重新验证。
+              </p>
+            </details>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    import "../scripts/toolkit";
+  </script>
+</BaseLayout>

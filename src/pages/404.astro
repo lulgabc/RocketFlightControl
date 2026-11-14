@@ -1,0 +1,23 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { url } from "../lib/url";
+---
+
+<BaseLayout
+  title="页面未找到"
+  description="这个坐标上没有东西。返回火箭飞控学习路线图首页。"
+  current=""
+  noindex
+>
+  <section class="container center-page">
+    <div>
+      <div class="code">404</div>
+      <h1>这个坐标上没有东西。</h1>
+      <p>链接可能已经移动，或者你输入的路径不在当前任务剖面里。</p>
+      <div class="btn-row" style="justify-content: center;">
+        <a class="btn btn-primary" href={url("/")}>返回首页</a>
+        <a class="btn btn-ghost" href={url("/roadmap/")}>查看路线图</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,99 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { url } from "../lib/url";
+import { DOMAINS } from "../data/fundamentals";
+---
+
+<BaseLayout
+  title="知识地图"
+  description="火箭飞控的七个知识域：数学与数值、刚体动力学、控制理论、状态估计与导航、制导与轨迹优化、嵌入式实时软件、系统工程与安全。每个域给出核心概念、掌握标准与常见误区。"
+  current="/fundamentals/"
+>
+  <section class="page-hero">
+    <div class="container">
+      <div class="page-hero-top">
+        <span class="dot"></span>
+        <span>Knowledge map / 7 domains</span>
+      </div>
+      <h1>不是学完再做，<br />而是做着补。</h1>
+      <p>
+        下面七个域构成飞控的最小知识闭环。每个域都给出“核心问题、必须理解的概念、能做什么、常见误区”。
+        不要试图先把某一域学到满分——飞控的直觉来自域与域之间的连接。
+      </p>
+      <div class="page-hero-meta">
+        <span>知识域 <b>7 个</b></span>
+        <span>核心概念 <b>{DOMAINS.reduce((sum, domain) => sum + domain.concepts.length, 0)} 条</b></span>
+        <span>掌握标准 <b>{DOMAINS.reduce((sum, domain) => sum + domain.mastery.length, 0)} 条</b></span>
+        <span>学习方式 <b>项目驱动 · 循环补缺</b></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="callout reveal" style="margin-bottom: 28px;">
+        <span class="callout-icon" aria-hidden="true">↺</span>
+        <div>
+          <h3>推荐的使用方式</h3>
+          <p>
+            先按路线图走到阶段 02，再回到这里补“估计”和“嵌入式”。每完成一个项目，重读对应域，
+            把“我以为我懂了”改成“我能解释并验证”。表里的掌握标准可以直接当面试题或自测题。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href={url("/roadmap/")}>对照路线图</a>
+      </div>
+
+      <div class="domain-list">
+        {DOMAINS.map((domain) => (
+          <article class="domain reveal" id={domain.id}>
+            <div class="domain-head">
+              <div class="domain-num" aria-hidden="true">{domain.index}</div>
+              <div>
+                <h2>{domain.title}</h2>
+                <div class="en">{domain.en}</div>
+              </div>
+              <span class="tag">P{domain.index}</span>
+            </div>
+
+            <p class="domain-summary">{domain.summary}</p>
+
+            <div class="domain-body">
+              <div>
+                <h3 class="domain-col-title">核心概念</h3>
+                <div class="concept-grid">
+                  {domain.concepts.map((concept) => (
+                    <div class="concept">
+                      <b>{concept.name}</b>
+                      <span>{concept.note}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h3 class="domain-col-title">掌握标准 · 能做什么</h3>
+                <ul class="mastery-list">
+                  {domain.mastery.map((item) => (
+                    <li>{item}</li>
+                  ))}
+                </ul>
+                <h3 class="domain-col-title">常见误区</h3>
+                <ul class="pitfall-list">
+                  {domain.pitfalls.map((item) => (
+                    <li>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div class="domain-foot">
+              <span style="color: var(--faint);">在路线图中的位置</span>
+              <a href={`${url("/roadmap/")}#${domain.phase.href.split("#")[1]}`}>
+                {domain.phase.label} →
+              </a>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+</BaseLayout>

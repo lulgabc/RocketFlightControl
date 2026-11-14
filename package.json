@@ -1,0 +1,22 @@
+{
+  "name": "rocket-flight-control",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "火箭飞控系统学习路线图 — 从数值仿真、六自由度建模、控制与估计，到嵌入式飞控与飞行验证的中文自学指南。",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.4",
+    "astro": "^7.4.11"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "typescript": "^6.0.3"
+  }
+}

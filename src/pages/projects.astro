@@ -1,0 +1,154 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { PROJECTS } from "../data/projects";
+
+const groups: Record<string, string> = {
+  "1d-sim": "sim",
+  "6dof": "sim",
+  "stability": "sim",
+  "pid": "sim",
+  "tvc": "hw",
+  "attitude-est": "sim",
+  "ekf": "sim",
+  "guidance-2d": "sim",
+  "mcu-fc": "hw",
+  "hil": "verify",
+  "sounding": "verify",
+  "landing": "advanced",
+};
+
+const filters = [
+  { id: "all", label: "全部", count: PROJECTS.length },
+  { id: "sim", label: "概念与仿真", count: 7 },
+  { id: "hw", label: "硬件与台架", count: 2 },
+  { id: "verify", label: "验证与飞行", count: 2 },
+  { id: "advanced", label: "进阶", count: 1 },
+];
+
+const tagClass = (level: number) =>
+  level === 1 ? "tag teal" : level === 3 ? "tag gold" : level === 4 ? "tag accent" : "tag";
+---
+
+<BaseLayout
+  title="项目阶梯"
+  description="火箭飞控十二个实践项目：从一维弹道积分器、六自由度仿真、PID 与推力矢量台架，到 EKF 组合导航、STM32 最小飞控、HIL 与探空火箭完整闭环。含实施步骤、验收标准与延伸方向。"
+  current="/projects/"
+>
+  <section class="page-hero">
+    <div class="container">
+      <div class="page-hero-top">
+        <span class="dot"></span>
+        <span>Project ladder / 12 builds</span>
+      </div>
+      <h1>用十二个项目，<br />把知识焊起来。</h1>
+      <p>
+        每个项目都对应路线图的一个阶段，并给出可检查的验收标准。顺序不是绝对的，但依赖关系是：
+        没有六自由度模型，就无法验证控制器；没有 HIL，就不要把飞控装进真火箭。
+      </p>
+      <div class="page-hero-meta">
+        <span>项目数 <b>12</b></span>
+        <span>难度跨度 <b>1 周 — 3 个月</b></span>
+        <span>硬件项目 <b>3 个</b></span>
+        <span>原则 <b>验收不通过，不升级</b></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="filters" role="group" aria-label="按类型筛选项目">
+        {filters.map((filter) => (
+          <button
+            class="filter-btn"
+            type="button"
+            data-project-filter={filter.id}
+            aria-pressed={filter.id === "all" ? "true" : "false"}
+          >
+            {filter.label} · {filter.count}
+          </button>
+        ))}
+      </div>
+
+      <div class="project-list">
+        {PROJECTS.map((project) => (
+          <article
+            class="project-card reveal"
+            id={project.id}
+            data-project-group={groups[project.id]}
+          >
+            <div class="project-head">
+              <span class="project-idx" aria-hidden="true">{project.index}</span>
+              <div class="project-head-main">
+                <h2>{project.title}</h2>
+                <div class="en">{project.en}</div>
+                <div class="project-badges">
+                  <span class={tagClass(project.level)}>{project.levelLabel}</span>
+                  <span class="tag">{project.weeks}</span>
+                  <span class="tag">{project.phase}</span>
+                </div>
+              </div>
+            </div>
+
+            <p class="project-summary">{project.summary}</p>
+
+            <div class="project-cols">
+              <div class="project-col">
+                <h3>实施步骤</h3>
+                <ol>
+                  {project.build.map((step) => (
+                    <li>{step}</li>
+                  ))}
+                </ol>
+              </div>
+              <div class="project-col">
+                <h3>验收标准</h3>
+                <ul>
+                  {project.pass.map((item) => (
+                    <li>{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div class="project-col">
+                <h3>延伸</h3>
+                <p class="stretch">{project.stretch}</p>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+      <p class="empty-note" data-project-empty hidden>这个分类下暂时没有项目。</p>
+    </div>
+  </section>
+
+  <script>
+    const buttons = Array.from(
+      document.querySelectorAll<HTMLButtonElement>("[data-project-filter]"),
+    );
+    const cards = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-project-group]"),
+    );
+    const empty = document.querySelector<HTMLElement>("[data-project-empty]");
+
+    for (const button of buttons) {
+      button.addEventListener("click", () => {
+        const filter = button.dataset.projectFilter ?? "all";
+        let visible = 0;
+
+        for (const item of buttons) {
+          item.setAttribute(
+            "aria-pressed",
+            String(item.dataset.projectFilter === filter),
+          );
+        }
+
+        for (const card of cards) {
+          const show = filter === "all" || card.dataset.projectGroup === filter;
+          card.hidden = !show;
+          if (show) visible += 1;
+        }
+
+        if (empty) empty.hidden = visible > 0;
+      });
+    }
+  </script>
+</BaseLayout>

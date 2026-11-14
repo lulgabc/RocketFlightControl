@@ -1,0 +1,125 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { RESOURCES, CATEGORIES } from "../data/resources";
+
+const counts = new Map<string, number>();
+for (const resource of RESOURCES) {
+  counts.set(resource.category, (counts.get(resource.category) ?? 0) + 1);
+}
+
+const filters = [
+  { id: "全部", label: "全部", count: RESOURCES.length },
+  ...CATEGORIES.map((category) => ({
+    id: category,
+    label: category,
+    count: counts.get(category) ?? 0,
+  })),
+];
+
+const levelClass = (level: string) =>
+  level === "入门" ? "tag teal" : level === "进阶" ? "tag gold" : level === "参考" ? "tag" : "tag accent";
+---
+
+<BaseLayout
+  title="资源库"
+  description="火箭飞控精选资源：推进、动力学、控制、估计、优化与系统工程书籍；MIT、Stanford 公开课；PX4、ArduPilot、RocketPy、Basilisk 等开源项目；仿真工具、标准与安全规范、社区与数据。"
+  current="/resources/"
+>
+  <section class="page-hero">
+    <div class="container">
+      <div class="page-hero-top">
+        <span class="dot"></span>
+        <span>Library / curated & annotated</span>
+      </div>
+      <h1>少收藏，多动手。</h1>
+      <p>
+        这里只保留真正会被翻开的入口。每条资源都标注难度、语言与用途；没有链接的书籍请通过图书馆或出版社获取。
+        资源会随阶段更新，但不会为了“看起来丰富”而堆数量。
+      </p>
+      <div class="page-hero-meta">
+        <span>条目 <b>{RESOURCES.length}</b></span>
+        <span>分类 <b>{CATEGORIES.length} 类</b></span>
+        <span>语言 <b>中文 / 英文</b></span>
+        <span>原则 <b>每阶段最多精读 2–3 个</b></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="resource-cats" role="group" aria-label="按分类筛选资源">
+        {filters.map((filter) => (
+          <button
+            class="filter-btn"
+            type="button"
+            data-resource-filter={filter.id}
+            aria-pressed={filter.id === "全部" ? "true" : "false"}
+          >
+            {filter.label} · {filter.count}
+          </button>
+        ))}
+      </div>
+
+      <div class="resource-grid">
+        {RESOURCES.map((resource) => (
+          <article class="resource-card reveal" data-resource-category={resource.category}>
+            <div class="resource-top">
+              <span class={levelClass(resource.level)}>{resource.level}</span>
+              <span class="tag">{resource.category}</span>
+              <span class="tag">{resource.lang}</span>
+            </div>
+            <h2>{resource.title}</h2>
+            <div class="resource-author">{resource.author}</div>
+            <p class="resource-note">{resource.note}</p>
+            {resource.href && (
+              <a
+                class="resource-link"
+                href={resource.href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                打开资源
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
+                  <path d="M4 2h6v6M10 2 2 10"></path>
+                </svg>
+              </a>
+            )}
+          </article>
+        ))}
+      </div>
+      <p class="empty-note" data-resource-empty hidden>这个分类下暂时没有条目。</p>
+    </div>
+  </section>
+
+  <script>
+    const buttons = Array.from(
+      document.querySelectorAll<HTMLButtonElement>("[data-resource-filter]"),
+    );
+    const cards = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-resource-category]"),
+    );
+    const empty = document.querySelector<HTMLElement>("[data-resource-empty]");
+
+    for (const button of buttons) {
+      button.addEventListener("click", () => {
+        const filter = button.dataset.resourceFilter ?? "全部";
+        let visible = 0;
+
+        for (const item of buttons) {
+          item.setAttribute(
+            "aria-pressed",
+            String(item.dataset.resourceFilter === filter),
+          );
+        }
+
+        for (const card of cards) {
+          const show = filter === "全部" || card.dataset.resourceCategory === filter;
+          card.hidden = !show;
+          if (show) visible += 1;
+        }
+
+        if (empty) empty.hidden = visible > 0;
+      });
+    }
+  </script>
+</BaseLayout>

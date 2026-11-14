@@ -1,0 +1,101 @@
+---
+import "../styles/global.css";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import { SITE } from "../lib/site";
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  current?: string;
+  bodyClass?: string;
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description = SITE.description,
+  image = `${SITE.url}${SITE.base}/og.png`,
+  current = "",
+  bodyClass = "",
+  noindex = false,
+} = Astro.props;
+
+const pageTitle = !title
+  ? `${SITE.title} · ${SITE.titleZh}`
+  : `${title} · ${SITE.title}`;
+const canonical = new URL(Astro.url.pathname, SITE.url).toString();
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: `${SITE.title} · ${SITE.titleZh}`,
+  url: `${SITE.url}${SITE.base}/`,
+  description,
+  inLanguage: "zh-CN",
+};
+---
+
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="author" content={SITE.author} />
+    <meta name="theme-color" content="#05070c" />
+    <meta name="color-scheme" content="dark light" />
+    {noindex && <meta name="robots" content="noindex" />}
+
+    <meta property="og:type" content={title ? "article" : "website"} />
+    <meta property="og:site_name" content={SITE.title} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={image} />
+    <meta property="og:image:alt" content="RocketFlightControl — 火箭飞控学习路线图" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={image} />
+    <meta name="twitter:image:alt" content="RocketFlightControl — 火箭飞控学习路线图" />
+
+    <link rel="icon" href={`${import.meta.env.BASE_URL}favicon.svg`} type="image/svg+xml" />
+    <link rel="sitemap" href={`${import.meta.env.BASE_URL}sitemap-index.xml`} />
+
+    <script is:inline>
+      (function () {
+        try {
+          var saved = localStorage.getItem("rfc-theme");
+          var theme = saved === "light" || saved === "dark" ? saved : "dark";
+          document.documentElement.dataset.theme = theme;
+        } catch (e) {
+          document.documentElement.dataset.theme = "dark";
+        }
+        document.documentElement.classList.add("js");
+        try {
+          if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            document.documentElement.classList.add("reduce-motion");
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </head>
+  <body class={bodyClass}>
+    <a class="skip-link" href="#main">跳到主要内容</a>
+    <Header current={current} />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+
+    <script>
+      import "../scripts/main";
+    </script>
+  </body>
+</html>

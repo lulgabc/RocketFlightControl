@@ -1,0 +1,154 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { SITE, SITE_STATS } from "../lib/site";
+import { url } from "../lib/url";
+import { TOTAL_CHECKPOINTS } from "../data/roadmap";
+import { PROJECTS } from "../data/projects";
+import { RESOURCES } from "../data/resources";
+---
+
+<BaseLayout
+  title="关于这份路线图"
+  description="RocketFlightControl 是什么、适合谁、如何使用，以及火箭飞控学习中的安全与法律边界。"
+  current="/about/"
+>
+  <section class="page-hero">
+    <div class="container">
+      <div class="page-hero-top">
+        <span class="dot"></span>
+        <span>About / how to use</span>
+      </div>
+      <h1>一份能被执行的地图，<br />而不是一份书单。</h1>
+      <p>
+        RocketFlightControl 是一个中文的火箭飞控（GNC）自学项目。它假设你会一点编程、愿意补数学，
+        并且更想做出能跑的东西，而不是收集课程链接。
+      </p>
+      <div class="page-hero-meta">
+        <span>版本 <b>v1.0 · 2026</b></span>
+        <span>阶段 <b>{SITE_STATS[0].value} 个</b></span>
+        <span>检查点 <b>{TOTAL_CHECKPOINTS} 项</b></span>
+        <span>项目 <b>{PROJECTS.length} 个</b></span>
+        <span>资源 <b>{RESOURCES.length} 条</b></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container about-grid">
+      <div class="prose">
+        <h2>为什么做这份路线图</h2>
+        <p>
+          火箭飞控的资料并不少：公开课、开源飞控、论文、教材都在那里。真正的问题是<strong>顺序</strong>和<strong>验收</strong>。
+          多数人卡在两个地方：一上来就读最优控制，却不知道自己的六自由度模型是错的；或者能调好一台多旋翼，
+          却说不清增益为什么在跨声速段失效。
+        </p>
+        <p>
+          这份路线图用“阶段产物 + 能力检查点”把路径钉住。每个阶段都要求一个能运行的产物，
+          每条检查点都要求你能解释、能验证。做不到就停在原地——这不是拖延，而是避免把错误带进下一个阶段。
+        </p>
+
+        <h2>适合谁</h2>
+        <ul>
+          <li>有编程基础（Python 至少能写脚本），想系统进入火箭/航天 GNC 的工程师或学生。</li>
+          <li>做过多旋翼或机器人控制，想补上六自由度、估计与系统工程的人。</li>
+          <li>准备参加探空火箭、CubeSat、飞控开源项目，需要一张全局地图的人。</li>
+          <li>愿意每周投入 8–10 小时，持续一年以上的自学者。</li>
+        </ul>
+
+        <h2>不适合谁</h2>
+        <ul>
+          <li>想找“三天做出可回收火箭”的速成教程——这里没有，也不应该有。</li>
+          <li>完全不愿补数学，只想复制粘贴飞控代码的人。</li>
+          <li>寻找推进剂配方、发动机制造或绕过许可的指导的人。本网站不提供这些内容。</li>
+        </ul>
+
+        <h2>时间预期</h2>
+        <p>
+          七个阶段的建议周期合计约 42–58 周，按每周 15–20 小时的投入估计。若每周只能投入
+          <strong>8–10 小时</strong>，实际会拉长到 <strong>18–24 个月</strong>，因为硬件调试、采购、
+          场地与返工不可压缩。阶段 00–02 可以并行补数学，阶段 03 之后建议严格按项目推进。
+        </p>
+
+        <h2>每周怎么用</h2>
+        <ol>
+          <li>用 2 小时读概念与推导，写下“我还不懂的三件事”。</li>
+          <li>用 6 小时做当前阶段的产物，优先写可重复运行的脚本/测试。</li>
+          <li>周末用 30 分钟对照检查点，勾掉真正能做到的项，并记录证据（图、日志、测试输出）。</li>
+          <li>每完成一个项目，写一页复盘：目标、结果、偏差、下一步。把它放进仓库。</li>
+        </ol>
+        <p>
+          路线图页面的勾选进度只保存在浏览器 <code>localStorage</code>，不会上传，也不需要账号。
+          换设备不会同步；重要进度请自己写进学习日志。
+        </p>
+
+        <h2>为什么这样排序</h2>
+        <p>
+          先建模，再控制，是因为没有可信的被控对象，控制器设计只是自娱自乐；先控制，再估计与制导，
+          是因为估计器的输出最终要进入控制回路；嵌入式放在后面，是因为在桌面上没验证过的算法，
+          上了 MCU 只会多一层噪声；系统工程与安全放在飞行前，是因为它们不是“文档工作”，而是飞行许可的一部分。
+        </p>
+        <p>
+          进阶阶段不设终点。选择垂直回收、卫星 ADCS、编队或鲁棒控制中的一个方向，复现一篇论文，
+          公开你的代码与数据——这比再收藏十门课更有用。
+        </p>
+
+        <h2 id="safety">安全与法律边界</h2>
+        <p>
+          火箭是高风险系统。本网站的内容面向<strong>仿真、电子、模型火箭与在合规场地进行的探空火箭</strong>。
+          它不构成工程、法律或安全建议，也不能替代有资质人员的评审。
+        </p>
+        <ul>
+          <li><strong>推进剂与发动机：</strong>不要根据网络教程自行混合、浇铸或测试推进剂。固体/液体发动机的设计、制造、储存与测试受法律、许可与场地严格约束。</li>
+          <li><strong>空域与发射许可：</strong>发射前必须确认当地法规、空域协调、场地半径、人员距离、消防与保险要求。不同国家和地区差异极大。</li>
+          <li><strong>飞行终止与失效保护：</strong>任何有推力飞行的系统都应独立设计飞行终止/安全链路，并在地面验证其有效性。</li>
+          <li><strong>人员与监护：</strong>未成年人必须在监护人与合规组织指导下进行；不要独自测试任何推进系统。</li>
+          <li><strong>不要飞你未验证的代码：</strong>先在 SIL/HIL、台架与低风险测试中验证，再做受控飞行。</li>
+        </ul>
+        <p>
+          如果你不确定某件事是否合法或安全，答案就是“先停下，去问当地航空俱乐部、发射场或监管机构”。
+        </p>
+
+        <h2>准确性与反馈</h2>
+        <p>
+          路线图中的数学、控制与航天内容由公开资料整理，可能存在错误或简化。发现事实错误、失效链接、
+          不准确的资源描述，欢迎在 <a href={SITE.repo} target="_blank" rel="noopener noreferrer">GitHub 仓库</a>
+          提交 issue。请附上出处与上下文；安全相关的问题会优先处理。
+        </p>
+
+        <h2>许可</h2>
+        <p>
+          本站代码与文字内容以 <strong>MIT License</strong> 开源。引用书籍、论文、商标与第三方资源时，
+          版权归各自权利人所有。转载或用于教学时，请保留来源链接。
+        </p>
+      </div>
+
+      <aside class="about-aside">
+        <div class="aside-card">
+          <span class="mono">SCOPE</span>
+          <h3>覆盖范围</h3>
+          <p>GNC 学习路径、概念解释、项目验收标准与资源导航。不包含推进剂配方、发动机制造或发射操作指令。</p>
+        </div>
+        <div class="aside-card">
+          <span class="mono">STATUS</span>
+          <h3>持续更新</h3>
+          <p>资源与检查点会随读者反馈迭代。当前为 v1.0，优先修正事实错误与失效链接。</p>
+        </div>
+        <div class="aside-card">
+          <span class="mono">LOCAL FIRST</span>
+          <h3>无追踪</h3>
+          <p>没有账号、没有分析脚本、没有第三方字体或 CDN。学习进度只存在你的浏览器里。</p>
+        </div>
+        <div class="aside-card">
+          <span class="mono">SAFETY</span>
+          <h3>先读安全声明</h3>
+          <p><a href="#safety">跳到安全与法律边界</a>。真正的飞行永远需要场地、许可与有经验的评审。</p>
+        </div>
+        <div class="aside-card">
+          <span class="mono">START</span>
+          <h3>不知道从哪开始？</h3>
+          <p><a href={url("/roadmap/#foundation")}>从阶段 00 开始</a>，或先做<a href={url("/projects/#1d-sim")}>一维积分器</a>。</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+</BaseLayout>

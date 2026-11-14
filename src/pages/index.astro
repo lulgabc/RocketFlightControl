@@ -1,0 +1,300 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import SectionHead from "../components/SectionHead.astro";
+import { SITE, SITE_STATS, PRINCIPLES } from "../lib/site";
+import { url } from "../lib/url";
+import { PHASES, TOTAL_CHECKPOINTS } from "../data/roadmap";
+import { DOMAINS } from "../data/fundamentals";
+import { PROJECTS } from "../data/projects";
+import { RESOURCES } from "../data/resources";
+
+const featuredProjects = ["6dof", "mcu-fc", "sounding"]
+  .map((id) => PROJECTS.find((project) => project.id === id))
+  .filter((project): project is (typeof PROJECTS)[number] => Boolean(project));
+
+const featuredResources = RESOURCES.filter((resource) => resource.featured).slice(0, 4);
+const projectCount = PROJECTS.length;
+---
+
+<BaseLayout
+  description={SITE.description}
+  current="/"
+>
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <span class="eyebrow hero-kicker">A GNC field guide · 中文学习路线</span>
+        <h1>
+          把一枚火箭<br />
+          飞成一条<br />
+          <em>可控的轨迹。</em>
+        </h1>
+        <p class="hero-lead">
+          飞控不是“会写 PID”。它是把<strong>力学、控制、估计、嵌入式与安全工程</strong>
+          串成一条可验证的链路。这份路线图从第一行数值积分开始，带你走到探空火箭与垂直回收。
+        </p>
+        <div class="btn-row">
+          <a class="btn btn-primary" href={url("/roadmap/")}>
+            从七阶段路线开始 <span aria-hidden="true">→</span>
+          </a>
+          <a class="btn btn-ghost" href={url("/projects/")}>先看项目阶梯</a>
+        </div>
+        <div class="hero-meta">
+          <span>7 个阶段</span>
+          <span>{TOTAL_CHECKPOINTS} 个检查点</span>
+          <span>{projectCount} 个实践项目</span>
+          <span>业余 18–24 个月</span>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="flight-stage" aria-hidden="true">
+          <div class="stage-top">
+            <span>MISSION PROFILE / SOUNDING-01</span>
+            <span>T+ <b>00:00:42</b></span>
+          </div>
+
+          <svg class="stage-svg" viewBox="0 0 420 440" preserveAspectRatio="xMidYMid slice">
+            <g class="traj-grid">
+              <line x1="36" y1="80" x2="392" y2="80"></line>
+              <line x1="36" y1="140" x2="392" y2="140"></line>
+              <line x1="36" y1="200" x2="392" y2="200"></line>
+              <line x1="36" y1="260" x2="392" y2="260"></line>
+              <line x1="36" y1="320" x2="392" y2="320"></line>
+              <line x1="36" y1="380" x2="392" y2="380"></line>
+              <line x1="100" y1="46" x2="100" y2="396"></line>
+              <line x1="190" y1="46" x2="190" y2="396"></line>
+              <line x1="280" y1="46" x2="280" y2="396"></line>
+            </g>
+            <text class="traj-tick" x="40" y="76">40 km</text>
+            <text class="traj-tick" x="40" y="196">20 km</text>
+            <text class="traj-tick" x="40" y="376">0 km</text>
+            <path
+              class="traj-glow"
+              d="M 58 392 C 96 372, 130 356, 166 326 C 202 296, 218 254, 244 214 C 270 174, 296 132, 332 82"
+            ></path>
+            <path
+              class="traj"
+              d="M 58 392 C 96 372, 130 356, 166 326 C 202 296, 218 254, 244 214 C 270 174, 296 132, 332 82"
+            ></path>
+            <circle cx="58" cy="392" r="3" fill="#4fe0c8"></circle>
+            <circle cx="332" cy="82" r="3" fill="#ff6b3d"></circle>
+          </svg>
+
+          <div class="rocket-dot" style="left: 61%; top: 41%;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2.5c2.8 2.1 4.6 5.3 4.6 8.9 0 2.4-.8 4.6-2.2 6.2L12 19.9l-2.4-2.3a9.4 9.4 0 0 1-2.2-6.2c0-3.6 1.8-6.8 4.6-8.9Z"></path>
+              <circle cx="12" cy="9.2" r="1.5"></circle>
+              <path d="M12 19.9v1.7"></path>
+            </svg>
+          </div>
+
+          <div class="telemetry t1">
+            ALT
+            <b>24.6<span>km</span></b>
+          </div>
+          <div class="telemetry t2">
+            VEL
+            <b>842<span>m/s</span></b>
+          </div>
+          <div class="telemetry t3">
+            DYN PRESS
+            <b>31.2<span>kPa</span></b>
+          </div>
+
+          <div class="stage-bottom">
+            <span>GNC MODE / CLOSED LOOP</span>
+            <span>STATUS <b>NOMINAL</b></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stats" aria-label="路线图数据">
+    <div class="container">
+      <div class="stats-grid">
+        {SITE_STATS.map((stat) => (
+          <div class="stat">
+            <div class="stat-value">{stat.value}<span>·</span></div>
+            <div class="stat-label">{stat.label}</div>
+            <div class="stat-note">{stat.note}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <SectionHead
+        eyebrow="How to use this map"
+        title="飞控难，不是因为公式多"
+        lead="真正的难点在于：每个决定都同时受模型、硬件、时间与安全约束。这份路线图按“能做出什么”组织，而不是按教材章节。先读原则，再选阶段。"
+      />
+      <div class="principle-grid reveal">
+        {PRINCIPLES.map((principle) => (
+          <article class="principle">
+            <span class="principle-index">{principle.index}</span>
+            <h3>{principle.title}</h3>
+            <p>{principle.body}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="The roadmap"
+        title="七个阶段，从方程到飞行"
+        lead="每个阶段都有明确目标、核心主题、一个必须做出的产物，以及可以自检的能力检查点。阶段之间允许重叠，但不建议跳级。"
+        linkHref={url("/roadmap/")}
+        linkLabel="查看完整路线"
+      />
+      <div class="phase-grid">
+        {PHASES.map((phase, index) => (
+          <a
+            class:list={["phase-preview", "reveal", index === PHASES.length - 1 && "is-wide"]}
+            href={`${url("/roadmap/")}#${phase.id}`}
+          >
+            <div class="phase-preview-top">
+              <span class="phase-num">PHASE {phase.index}</span>
+              <span class="tag">{phase.weeks}</span>
+            </div>
+            <h3>{phase.title}</h3>
+            <p>{phase.summary}</p>
+            <div class="phase-preview-foot">
+              <span>{phase.level}</span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Capability matrix"
+        title="七个知识域，一张能力地图"
+        lead="飞控是典型的“T 型”学科：每个域都要够用，但至少要有一两个域能深入。表格里的“核心问题”用来判断自己是否真的理解。"
+        linkHref={url("/fundamentals/")}
+        linkLabel="展开知识地图"
+      />
+      <div class="matrix-wrap reveal">
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th scope="col">知识域</th>
+              <th scope="col">它回答的核心问题</th>
+              <th scope="col">掌握标志</th>
+              <th scope="col">阶段</th>
+            </tr>
+          </thead>
+          <tbody>
+            {DOMAINS.map((domain) => (
+              <tr>
+                <td>{domain.title}</td>
+                <td>{domain.summary}</td>
+                <td class="lvl">{domain.mastery[0]}</td>
+                <td class="mono">P{domain.index}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Project ladder"
+        title="十二个项目，把知识变成飞行器"
+        lead="从一维积分器到 HIL 与探空火箭。每个项目都给出实施步骤、验收标准和延伸方向——验收不通过，就不要进入下一级。"
+        linkHref={url("/projects/")}
+        linkLabel="查看全部项目"
+      />
+      <div class="project-strip">
+        {featuredProjects.map((project) => (
+          <a class="project-mini reveal" href={`${url("/projects/")}#${project.id}`}>
+            <span class="mono">PROJECT {project.index}</span>
+            <h3>{project.title}</h3>
+            <p>{project.summary}</p>
+            <span class="tag">{project.levelLabel} · {project.weeks}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <div class="tool-preview reveal">
+        <div class="tool-preview-copy">
+          <span class="eyebrow">Interactive toolkit</span>
+          <h3>先把数字算对，再谈控制</h3>
+          <p>
+            齐奥尔科夫斯基公式、标准大气与 PID 阶跃响应——三个最常用的小工具。
+            它们不能替代仿真，但能在你按下“运行”之前，告诉你数量级是否合理。
+          </p>
+          <div class="btn-row">
+            <a class="btn btn-ghost btn-sm" href={url("/toolkit/")}>打开工具箱 →</a>
+          </div>
+        </div>
+        <div class="tool-preview-visual" aria-hidden="true">
+          <div class="readout"><span>Isp</span><b>220 s</b></div>
+          <div class="readout"><span>m₀ / m_f</span><b>120 / 28 kg</b></div>
+          <div class="readout"><span>MASS RATIO</span><b>4.29</b></div>
+          <div class="readout"><span>IDEAL Δv</span><b class="teal">3 140 m/s</b></div>
+          <div class="readout"><span>GRAVITY LOSS ≈</span><b>− 412 m/s</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Reading list"
+        title="少而准的资源入口"
+        lead="精选书、课程、开源飞控与仿真工具。每条都注明难度和用途，避免“收藏了就等于学了”。"
+        linkHref={url("/resources/")}
+        linkLabel="浏览完整资源库"
+      />
+      <div class="resource-mini-grid">
+        {featuredResources.map((resource) => (
+          <a
+            class="resource-mini reveal"
+            href={resource.href ?? url("/resources/")}
+            target={resource.href ? "_blank" : undefined}
+            rel={resource.href ? "noopener noreferrer" : undefined}
+          >
+            <span class="tag">{resource.category}</span>
+            <h3>{resource.title}</h3>
+            <p>{resource.author}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">!</span>
+        <div>
+          <h3>先读安全声明，再点燃任何东西</h3>
+          <p>
+            本路线图聚焦仿真、电子与模型/探空火箭。推进剂、发动机、空域与发射许可受法律和场地严格约束；
+            不要用教程替代资质、评审与保险。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href={url("/about/#safety")}>阅读安全边界</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
