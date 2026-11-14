@@ -233,6 +233,59 @@ const projectCount = PROJECTS.length;
 
   <section class="section tight">
     <div class="container">
+      <SectionHead
+        eyebrow="Engineering track"
+        title="当控制律要变成能飞的代码"
+        lead="主路线图解决“懂不懂”，工程专线解决“能不能跑在真实硬件与链路上”：C++20、PREEMPT_RT / RTOS、F´ / cFS、Eigen、CCSDS、SDR 与地面段。关键说法逐条附事实核查。"
+        linkHref={url("/flight-software/")}
+        linkLabel="进入工程专线"
+      />
+      <div class="tool-preview reveal">
+        <div class="tool-preview-copy">
+          <span class="eyebrow">C/C++ + communications</span>
+          <h3>飞控与通信，两条主线，一套黄金栈</h3>
+          <p>
+            十二条模块从“无堆 C++”到 RT Linux、飞控框架、GNC 实现、凸优化代码生成、CCSDS、SDR 与地面段。
+            十八个月计划，每个阶段都有可验收的交付物；同时明确哪些是公开事实，哪些仍是研究趋势。
+          </p>
+          <div class="btn-row">
+            <a class="btn btn-ghost btn-sm" href={url("/flight-software/")}>打开专线 →</a>
+          </div>
+        </div>
+        <div class="tool-preview-visual" aria-hidden="true">
+          <div class="readout"><span>FLIGHT SOFTWARE</span><b>C++20 · PREEMPT_RT</b></div>
+          <div class="readout"><span>FRAMEWORK</span><b>NASA F´ · cFS</b></div>
+          <div class="readout"><span>GNC MATH</span><b>Eigen · CVXPYgen</b></div>
+          <div class="readout"><span>COMMS</span><b>CCSDS · SDR · DTN</b></div>
+          <div class="readout"><span>GROUND</span><b>Yamcs · OpenC3</b></div>
+          <div class="readout"><span>FACT CHECK</span><b class="teal">16 claims</b></div>
+        </div>
+      </div>
+      <div class="project-strip" style="margin-top: 14px;">
+        <a class="project-mini reveal" href={url("/flight-software/#fsw")}>
+          <span class="mono">TRACK A</span>
+          <h3>飞行软件</h3>
+          <p>实时 C++、RTOS / RT Linux、F´ / cFS、GNC 实现、容错与 HIL。</p>
+          <span class="tag">6 个模块</span>
+        </a>
+        <a class="project-mini reveal" href={url("/flight-software/#comms")}>
+          <span class="mono">TRACK B</span>
+          <h3>通信与地面段</h3>
+          <p>链路预算、FEC / SDR、CAN FD / TTEthernet、CCSDS、DTN 与地面软件。</p>
+          <span class="tag">6 个模块</span>
+        </a>
+        <a class="project-mini reveal" href={url("/flight-software/#facts")}>
+          <span class="mono">REALITY CHECK</span>
+          <h3>趋势与事实核查</h3>
+          <p>Starlink 回传、PREEMPT_RT 主线、Rust 认证、RISC-V 与 Safe AI 的真实边界。</p>
+          <span class="tag">16 条核查</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
       <div class="tool-preview reveal">
         <div class="tool-preview-copy">
           <span class="eyebrow">Interactive toolkit</span>

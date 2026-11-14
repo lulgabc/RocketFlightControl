@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { url } from "../lib/url";
 import { RESOURCES, CATEGORIES } from "../data/resources";
 
 const counts = new Map<string, number>();
@@ -47,6 +48,18 @@ const levelClass = (level: string) =>
 
   <section class="section">
     <div class="container">
+      <div class="callout reveal" style="margin-bottom: 26px;">
+        <span class="callout-icon" aria-hidden="true">C++</span>
+        <div>
+          <h3>需要 C/C++、RTOS 与通信专用资源？</h3>
+          <p>
+            工程专线单独整理了实时 C++、F´ / cFS、凸优化求解器、CCSDS、SDR 与地面段工具，
+            并按“书 / 标准 / 框架 / 库 / 工具”标注难度与用途。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href={url("/flight-software/#specialized")}>查看工程资源</a>
+      </div>
+
       <div class="resource-cats" role="group" aria-label="按分类筛选资源">
         {filters.map((filter) => (
           <button

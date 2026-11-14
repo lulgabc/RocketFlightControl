@@ -1,0 +1,447 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import SectionHead from "../components/SectionHead.astro";
+import { url } from "../lib/url";
+import {
+  TRACKS,
+  PLAN,
+  STACK,
+  TRENDS,
+  MATURITY_LABEL,
+  FACTS,
+  VERDICT_LABEL,
+  SYSTEM_RESOURCES,
+} from "../data/systems";
+
+const moduleCount = TRACKS.reduce((sum, track) => sum + track.modules.length, 0);
+const resourceGroups = ["C/C++ 与实时", "通信与地面", "验证与工具"] as const;
+
+const resourcesByGroup = resourceGroups.map((group) => ({
+  group,
+  items: SYSTEM_RESOURCES.filter((resource) => resource.group === group),
+}));
+
+const verdictCounts = FACTS.reduce<Record<string, number>>((acc, fact) => {
+  acc[fact.verdict] = (acc[fact.verdict] ?? 0) + 1;
+  return acc;
+}, {});
+---
+
+<BaseLayout
+  title="C/C++ 飞控与通信工程"
+  description="火箭飞控与通信系统的 C/C++ 工程专线：实时 C++、PREEMPT_RT / RTOS、NASA F´ / cFS、Eigen / 凸优化、CCSDS / SDR / 地面段，以及 2026 技术趋势与逐条事实核查。"
+  current="/flight-software/"
+  bodyClass="engineering"
+>
+  <section class="page-hero">
+    <div class="container">
+      <div class="page-hero-top">
+        <span class="dot"></span>
+        <span>Engineering track / C/C++ + comms</span>
+      </div>
+      <h1>把控制律，<br />写成能飞的代码。</h1>
+      <p>
+        这是主路线图的工程实现支线：以公开可核实的 SpaceX 架构为参照，用 C++20、实时 Linux / RTOS、
+        F´ / cFS、Eigen 与 CCSDS，搭出一条可复现的飞控 + 通信链路。我们明确区分
+        <strong>公开事实、工程推测与研究趋势</strong>——不复刻，不神化。
+      </p>
+      <div class="page-hero-meta">
+        <span>工程主线 <b>2 条</b></span>
+        <span>模块 <b>{moduleCount} 个</b></span>
+        <span>建议投入 <b>18 个月 · 每周 8–12 小时</b></span>
+        <span>事实核查 <b>{FACTS.length} 条</b></span>
+        <span>专用资源 <b>{SYSTEM_RESOURCES.length} 条</b></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="anchor-bar">
+    <div class="container anchor-bar-inner">
+      <span class="anchor-label">C/C++ 工程</span>
+      <nav class="anchor-nav" aria-label="工程专线页面导航">
+        <a href="#architecture">架构</a>
+        <a href="#fsw">飞行软件</a>
+        <a href="#comms">通信</a>
+        <a href="#plan">计划</a>
+        <a href="#stack">技术栈</a>
+        <a href="#trends">趋势</a>
+        <a href="#facts">事实核查</a>
+        <a href="#specialized">资源</a>
+      </nav>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="container">
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">!</span>
+        <div>
+          <h3>先划清边界：这不是 SpaceX 复刻</h3>
+          <p>
+            SpaceX 的源码、控制器参数、内核配置、故障阈值与 CVXGEN 模型均不公开。公开可核实的是：
+            三台双核 x86、每核一个 Linux 实例、C/C++、Actor-Judge 命令仲裁与三余度，以及公开介绍过的凸优化着陆。
+            本页把每一条关键说法标成“已核实 / 部分属实 / 需修正 / 未证实”，学习目标是可复现的工程能力。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="#facts">查看事实核查</a>
+      </div>
+
+      <div class="reality-grid reveal">
+        <div class="reality-card">
+          <span class="tag teal">已公开</span>
+          <h3>可以据此学习</h3>
+          <ul>
+            <li>x86 + Linux + C/C++ 的三余度飞行链</li>
+            <li>Actor-Judge 的命令 / 仲裁思路</li>
+            <li>凸优化用于动力下降的公开叙述</li>
+            <li>Starlink 回传视频与遥测的任务演示</li>
+            <li>F´、cFS、PX4 等开源架构</li>
+          </ul>
+        </div>
+        <div class="reality-card">
+          <span class="tag gold">未公开</span>
+          <h3>不能假装知道</h3>
+          <ul>
+            <li>飞控源码、调度表与内核配置</li>
+            <li>控制器增益、滤波参数与门限</li>
+            <li>CVXGEN 模型、约束与热启动策略</li>
+            <li>故障检测算法与冗余仲裁细节</li>
+            <li>星舰通信黑障期间的具体链路</li>
+          </ul>
+        </div>
+        <div class="reality-card">
+          <span class="tag">不可推断</span>
+          <h3>常见的过度结论</h3>
+          <ul>
+            <li>“用同一套栈就能达到 SpaceX 水平”</li>
+            <li>“Linux 主线实时 = 可适航”</li>
+            <li>“Rust 已能写 DAL A 飞控”</li>
+            <li>“AI 已经自主控制着陆”</li>
+            <li>“学会工具就等于会做系统”</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight" id="architecture">
+    <div class="container">
+      <SectionHead
+        eyebrow="Architecture"
+        title="一张图看清飞控与通信的分界"
+        lead="飞行计算机负责估计、制导、控制与失效管理；通信栈负责把状态带下去、把指令带上来。两者通过箭内总线与统一时间基连接，任何一侧都不能假设另一侧永远在线。"
+      />
+      <div class="arch-wrap reveal">
+        <pre class="arch" aria-label="飞行计算机、GNC、总线与通信栈的架构示意">
+                         ┌───────────────────────────────────────────────┐
+                         │ Ground Segment                                │
+                         │ Yamcs · OpenC3 COSMOS · Open MCT              │
+                         └───────────────────────▲───────────────────────┘
+                                                 │ CCSDS / SDR / DTN
+                         ┌───────────────────────┴───────────────────────┐
+                         │ Communications Stack                          │
+                         │ RF ↔ FEC ↔ CCSDS ↔ Zenoh / DDS ↔ Telemetry    │
+                         └───────────────────────▲───────────────────────┘
+                                                 │ Ethernet / CAN FD
+┌────────────────────────────────────────────────┴────────────────────────────────────────────────┐
+│ Flight Computer · Linux 6.12+ PREEMPT_RT · C++20                                                  │
+│                                                                                                   │
+│  Sensor I/O ──► State Estimation ──► Guidance ──► Control ──► Actuator I/O                        │
+│  (IMU/Baro/GNSS)     (EKF / Mahony)    (convex / PN)  (PID/LQR)      (PWM / CAN / DShot)          │
+│        │                 │                  │              │                  │                    │
+│        └────────────────►│ Health Monitor / FDIR / Watchdog ◄────────────────┘                    │
+│                          │                                                                        │
+│                          └──► Black-box Log ──► Telemetry                                         │
+└───────────────────────────────────────────────────────────────────────────────────────────────────┘
+        ▲ IMU / Baro / GNSS / Mag                          │ PWM / CAN / DShot
+        │                                                   ▼
+┌───────┴────────────────┐                       ┌──────────┴──────────┐
+│ Sensor Nodes           │                       │ Actuators           │
+│ Zephyr / FreeRTOS      │                       │ TVC / valves / ESC  │
+└────────────────────────┘                       └─────────────────────┘</pre>
+      </div>
+      <p class="arch-note">
+        注：这是学习与实验架构，不是 SpaceX 的实际拓扑。真实系统的网络、供电与冗余设计未公开。
+      </p>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Two tracks"
+        title="两条主线，十二个模块"
+        lead="每条主线都以“能交付、能验证”为单位。模块顺序可以调整，但 A1–A3 与 B1–B3 是后续所有工作的地基。"
+      />
+      <div class="track-stack">
+        {TRACKS.map((track) => (
+          <section class="track-block" id={track.id}>
+            <div class="track-head reveal">
+              <div>
+                <span class="eyebrow">{track.label} · {track.en}</span>
+                <h2>{track.title}</h2>
+              </div>
+              <p>{track.lead}</p>
+            </div>
+            <div class="module-grid">
+              {track.modules.map((module) => (
+                <article class="module-card reveal">
+                  <div class="module-top">
+                    <span class="module-code">{module.code}</span>
+                    <span class="tag">{module.en}</span>
+                  </div>
+                  <h3>{module.title}</h3>
+                  <p class="module-summary">{module.summary}</p>
+                  <div class="module-topics">
+                    {module.topics.map((topic) => (
+                      <span>{topic}</span>
+                    ))}
+                  </div>
+                  <div class="module-deliverable">
+                    <b>交付物</b>
+                    <span>{module.deliverable}</span>
+                  </div>
+                  <details class="tech module-more">
+                    <summary>检查点 · {module.checkpoints.length} 项</summary>
+                    <ul class="tick-list">
+                      {module.checkpoints.map((checkpoint) => (
+                        <li>{checkpoint}</li>
+                      ))}
+                    </ul>
+                  </details>
+                </article>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight" id="plan">
+    <div class="container">
+      <SectionHead
+        eyebrow="18-month plan"
+        title="从工具链到 HIL，按季度验收"
+        lead="按每周 8–12 小时计算。每个阶段都有明确的通过门槛；没有达到门槛，就不要把问题带进下一阶段。"
+      />
+      <div class="matrix-wrap reveal">
+        <table class="matrix plan-table">
+          <thead>
+            <tr>
+              <th scope="col">窗口 / 阶段</th>
+              <th scope="col">重点</th>
+              <th scope="col">交付物</th>
+              <th scope="col">通过门槛</th>
+            </tr>
+          </thead>
+          <tbody>
+            {PLAN.map((row) => (
+              <tr>
+                <td>
+                  <span class="plan-window">{row.window}</span>
+                  <b class="plan-title">{row.title}</b>
+                </td>
+                <td>{row.focus}</td>
+                <td>{row.deliverable}</td>
+                <td>{row.gate}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div class="safety-note reveal">
+        <b>范围声明：</b>本计划只覆盖仿真、电子、台架与 HIL，不包含推进剂、发动机点火、飞行发射或任何需要许可的操作。
+        RF 发射同样需要频率许可与合规测试环境；桌面实验请使用屏蔽箱 / 衰减器。
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight" id="stack">
+    <div class="container">
+      <SectionHead
+        eyebrow="Golden stack"
+        title="一套能落地的现代组合"
+        lead="技术栈可以很宽，但一个人或小团队不能同时上所有新工具。下面这套组合兼顾“与工业界同源”“可复现”“成本可控”。"
+      />
+      <div class="matrix-wrap reveal">
+        <table class="matrix stack-table">
+          <thead>
+            <tr>
+              <th scope="col">层</th>
+              <th scope="col">推荐</th>
+              <th scope="col">理由</th>
+              <th scope="col">风险 / 边界</th>
+            </tr>
+          </thead>
+          <tbody>
+            {STACK.map((item) => (
+              <tr>
+                <td>{item.layer}</td>
+                <td class="stack-pick">{item.pick}</td>
+                <td>{item.reason}</td>
+                <td>{item.risk}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight" id="trends">
+    <div class="container">
+      <SectionHead
+        eyebrow="Technology radar"
+        title="2026：哪些在飞，哪些还在实验室"
+        lead="每条趋势都标注成熟度与边界。不要把“论文可行”“原型演示”“任务使用”混为一谈；这三者之间通常隔着数年验证。"
+      />
+      <div class="trend-grid">
+        {TRENDS.map((trend) => (
+          <article class:list={["trend-card", "reveal", `trend-${trend.maturity}`]}>
+            <div class="trend-top">
+              <span class="trend-index">{trend.index}</span>
+              <span class:list={["trend-badge", trend.maturity]}>
+                {MATURITY_LABEL[trend.maturity]}
+              </span>
+            </div>
+            <h3>{trend.title}</h3>
+            <p>{trend.summary}</p>
+            <dl class="trend-details">
+              <div>
+                <dt>公开证据</dt>
+                <dd>{trend.evidence}</dd>
+              </div>
+              <div>
+                <dt>现在该学</dt>
+                <dd>{trend.learn}</dd>
+              </div>
+              <div>
+                <dt>边界</dt>
+                <dd>{trend.caveat}</dd>
+              </div>
+            </dl>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight" id="facts">
+    <div class="container">
+      <SectionHead
+        eyebrow="Fact check"
+        title="把“听说”变成可核对的结论"
+        lead="下表逐条核对原始内容中的关键说法。判定为“需修正”的，页面正文已按核实结果改写；判定为“未证实”的，不作为事实使用。"
+      />
+      <div class="fact-summary reveal">
+        <span class="tag teal">已核实 {verdictCounts.verified ?? 0}</span>
+        <span class="tag gold">部分属实 {verdictCounts.partial ?? 0}</span>
+        <span class="tag accent">需修正 {verdictCounts.corrected ?? 0}</span>
+        <span class="tag">未证实 {verdictCounts.unverified ?? 0}</span>
+      </div>
+      <div class="matrix-wrap reveal">
+        <table class="matrix fact-table">
+          <thead>
+            <tr>
+              <th scope="col">说法</th>
+              <th scope="col">判定</th>
+              <th scope="col">核查结论</th>
+              <th scope="col">来源</th>
+            </tr>
+          </thead>
+          <tbody>
+            {FACTS.map((fact) => (
+              <tr>
+                <td>{fact.claim}</td>
+                <td>
+                  <span class:list={["verdict", fact.verdict]}>
+                    {VERDICT_LABEL[fact.verdict]}
+                  </span>
+                </td>
+                <td>{fact.detail}</td>
+                <td>
+                  {fact.source ? (
+                    <a
+                      class="src-link"
+                      href={fact.source.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {fact.source.label} ↗
+                    </a>
+                  ) : (
+                    <span class="src-none">公开资料不足</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight" id="specialized">
+    <div class="container">
+      <SectionHead
+        eyebrow="Specialized library"
+        title="C/C++ 与通信专用资源"
+        lead="只列真正会用到的入口。书籍不强行给链接；工具与标准优先链接官方仓库或规范页面。"
+      />
+      <div class="resource-groups">
+        {resourcesByGroup.map(({ group, items }) => (
+          <section class="resource-group reveal">
+            <div class="resource-group-head">
+              <h3>{group}</h3>
+              <span class="tag">{items.length} 条</span>
+            </div>
+            <div class="resource-list">
+              {items.map((resource) => (
+                <article class="resource-row">
+                  <div class="resource-row-main">
+                    <div class="resource-row-tags">
+                      <span class="tag">{resource.kind}</span>
+                      <span class="tag teal">{resource.level}</span>
+                    </div>
+                    <h4>{resource.title}</h4>
+                    <div class="resource-row-author">{resource.author}</div>
+                  </div>
+                  <p>{resource.note}</p>
+                  {resource.href ? (
+                    <a
+                      class="resource-row-link"
+                      href={resource.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      打开 ↗
+                    </a>
+                  ) : (
+                    <span class="resource-row-link muted">书籍 / 标准</span>
+                  )}
+                </article>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">→</span>
+        <div>
+          <h3>先有模型，再有代码</h3>
+          <p>
+            如果你还没完成六自由度仿真、EKF 与单轴控制，先回到主路线图的阶段 01–03。
+            工程专线假设你已经能用 Python 解释清楚每个模块“为什么这样设计”。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href={url("/roadmap/")}>回到七阶段路线</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
