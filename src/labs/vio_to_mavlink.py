@@ -77,6 +77,8 @@ def main() -> int:
     ap.add_argument("--ramp-after", type=float, default=0.0)
     ap.add_argument("--ramp-north", type=float, default=0.0)
     ap.add_argument("--ramp-time", type=float, default=5.0)
+    ap.add_argument("--yaw-offset-deg", type=float, default=0.0,
+                    help="rotate the VIO world yaw into the target (GT/PX4) yaw")
     ap.add_argument("--offset-n", type=float, default=0.0)
     ap.add_argument("--offset-e", type=float, default=0.0)
     ap.add_argument("--offset-d", type=float, default=0.0)
@@ -89,10 +91,17 @@ def main() -> int:
     p_src = data[:, 1:4]
     p0 = p_src[0]
 
-    # z-up world -> PX4 local NED.  The VIO world yaw is arbitrary, so this is
-    # only meaningful as a bench test unless the yaw is aligned separately.
+    # VIO world is z-up (ENU-like) with arbitrary yaw.  Rotate it by the
+    # measured yaw offset, then map ENU -> PX4 local NED.
+    yaw = np.deg2rad(args.yaw_offset_deg)
+    c_yaw, s_yaw = np.cos(yaw), np.sin(yaw)
+
     def to_ned(p: np.ndarray) -> np.ndarray:
-        return np.array([p[1] - p0[1], p[0] - p0[0], -(p[2] - p0[2])])
+        dx = p[0] - p0[0]
+        dy = p[1] - p0[1]
+        x = c_yaw * dx - s_yaw * dy
+        y = s_yaw * dx + c_yaw * dy
+        return np.array([y, x, -(p[2] - p0[2])])
 
     mav = mavutil.mavlink_connection(
         args.address,
@@ -141,8 +150,6 @@ def main() -> int:
                 idx = max(0, min(idx, len(p_src) - 1))
                 p = p_src[idx]
 
-            ned = to_ned(p) + np.array([args.offset_n, args.offset_e, args.offset_d])
-
             ramp = 0.0
             ramp_vel = 0.0
             if args.ramp_north and elapsed > args.ramp_after:
@@ -150,14 +157,17 @@ def main() -> int:
                 ramp = alpha * args.ramp_north
                 if alpha < 1.0:
                     ramp_vel = args.ramp_north / max(args.ramp_time, 1e-6)
-            ned[0] += ramp
 
+            p_ramped = p.copy()
+            p_ramped[1] += ramp
+            ned = to_ned(p_ramped) + np.array([args.offset_n, args.offset_e, args.offset_d])
+
+            # Ramp velocity in VIO north maps to (N, E) = (c*0.2, -s*0.2).
+            base_vel = np.array([c_yaw * ramp_vel, -s_yaw * ramp_vel, 0.0])
             if args.mode == "static":
-                vel = np.array([ramp_vel, 0.0, 0.0])
+                vel = base_vel
             else:
-                vel = np.array([ramp_vel, 0.0, 0.0])
-                if prev is not None:
-                    vel = vel + (ned - prev) / dt
+                vel = base_vel if prev is None else (ned - prev) / dt
                 prev = ned.copy()
                 # Do not feed derivative spikes from trajectory looping.
                 vel = np.clip(vel, -2.0, 2.0)
