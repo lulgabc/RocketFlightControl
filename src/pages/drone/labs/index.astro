@@ -27,18 +27,25 @@ const labs = [
   },
   {
     index: "03",
+    title: "离线 VIO：OpenVINS / VINS-Fusion",
+    detail: "EuRoC 数据集、ROS 2 bag 转换、OpenVINS 轨迹与 ATE/RPE 评估；先离线证明算法，再接 PX4。",
+    status: "可开始",
+    href: "/drone/labs/vio-offline/",
+  },
+  {
+    index: "04",
     title: "Jetson 伴飞检测",
     detail: "相机 + TensorRT + MAVSDK，在功耗/热预算内做检测与速度限制。",
     status: "规划中",
   },
   {
-    index: "04",
+    index: "05",
     title: "Crazyflie 蜂群",
     detail: "UWB + Crazyswarm2，从 1 台到 10 台编队，测时间同步与碰撞距离。",
     status: "规划中",
   },
   {
-    index: "05",
+    index: "06",
     title: "Remote ID 与围栏",
     detail: "Open Drone ID、geofence、failsafe；做一次合规与失效演练。",
     status: "规划中",
@@ -48,7 +55,7 @@ const labs = [
 
 <BaseLayout
   title="无人机实验室"
-  description="无人机可实践实验：PX4 SITL + MAVSDK Offboard、VIO、Jetson 边缘 AI、Crazyflie 蜂群与 Remote ID。每个 Lab 有环境、代码、验收与失效模式。"
+  description="无人机可实践实验：PX4 SITL + MAVSDK Offboard、外部视觉、OpenVINS 离线 VIO、Jetson 边缘 AI、Crazyflie 蜂群与 Remote ID。每个 Lab 有环境、代码、验收与失效模式。"
   current="/drone/"
 >
   <section class="page-hero">
@@ -61,14 +68,14 @@ const labs = [
       <h1>先让它在仿真里<br />飞一个方形。</h1>
       <p>
         这是无人机版块的实践入口。Lab 01 用 PX4 SITL + MAVSDK 完成“连接 → 健康检查 → 起飞 → Offboard 方形 → 降落”，
-        并把失效保护、日志与验收标准一起做出来。所有实验先在仿真/台架完成，再考虑真机。
+        Lab 02/03 再把外部视觉与真实 VIO 算法拆开验证。所有实验先在仿真/台架完成，再考虑真机。
       </p>
       <div class="page-hero-meta">
         <span>实验 <b>{labs.length} 个</b></span>
-        <span>可开始 <b>3 个</b></span>
+        <span>可开始 <b>4 个</b></span>
         <span>环境 <b>Ubuntu 22.04 / 24.04</b></span>
         <span>仿真 <b>PX4 SITL + Gazebo</b></span>
-        <span>接口 <b>MAVSDK / MAVLink</b></span>
+        <span>接口 <b>MAVSDK / ROS 2</b></span>
       </div>
     </div>
   </section>
@@ -77,8 +84,8 @@ const labs = [
     <div class="container">
       <SectionHead
         eyebrow="Lab roadmap"
-        title="五个实验，从单机到蜂群"
-        lead="Lab 01 先跑通；其余实验会按“仿真 → 台架 → 真机”的顺序补齐。每个 Lab 都要求可复现、可测量、可失效。"
+        title="六个实验，从单机到蜂群"
+        lead="Lab 01/01B/02/03 已可复现；其余按“仿真 → 台架 → 真机”的顺序补齐。每个 Lab 都要求可复现、可测量、可失效。"
       />
       <div class="build-grid">
         {labs.map((lab) => (

@@ -1,0 +1,431 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import SectionHead from "../../../components/SectionHead.astro";
+import { url } from "../../../lib/url";
+import runner from "../../../labs/run_openvins_euroc.sh?raw";
+
+const failures = [
+  { mode: "播放了 bag，但估计器没输出", cause: "话题名/QoS 不匹配；bag 一开始就播完；节点还没启动。", mitigation: "先看 ros2 topic hz；确认 /cam0/image_raw 20 Hz、/imu0 200 Hz；等日志出现 subscribing。" },
+  { mode: "一直无法初始化", cause: "起始段不够静止、IMU 噪声参数不对、图像太模糊、时间戳乱序。", mitigation: "从序列开头播放；检查 init_imu_thresh 与 init_window_time；先跑官方 bag。" },
+  { mode: "轨迹尺度明显不对", cause: "IMU 单位错（g 当 m/s²）、时间戳单位错、外参/内参错。", mitigation: "核对 data.csv 的 rad/s 与 m/s²；时间统一到秒或纳秒；用官方标定重跑。" },
+  { mode: "ATE 很大但看起来没飞", cause: "评估时没对齐坐标系，或 est/GT 时间单位差 1e9。", mitigation: "先看时间跨度是否一致；用 SE3 Umeyama 对齐；检查时间戳量级。" },
+  { mode: "跑一半跟丢", cause: "快速旋转、运动模糊、纹理不足、曝光变化。", mitigation: "记录跟踪特征数与重投影误差；换序列复现；不要只调阈值掩盖问题。" },
+  { mode: "CPU 跑不满 20 Hz", cause: "立体 + 每帧特征过多；VM 无 GPU；并行线程争抢。", mitigation: "先用单目；降 max_features；关 RViz；把 bag 以 0.5x 播放做离线诊断。" },
+  { mode: "Jazzy 编译失败", cause: "官方安装文档停留在 Galactic；OpenCV/Ceres/Eigen 版本差异。", mitigation: "用 master + Jazzy 实测组合；关 matplotlib；把完整错误贴到 issue 前先搜索。" },
+  { mode: "直接接 PX4 就漂", cause: "世界系/NED 未转换、yaw 未对齐、延迟未补偿、协方差虚假自信。", mitigation: "先接 VehicleOdometry 做地面静态测试；再悬停；最后才飞航线。" },
+];
+---
+
+<BaseLayout
+  title="Lab 03 · 离线 VIO：OpenVINS / VINS-Fusion"
+  description="用 EuRoC 数据集离线跑 OpenVINS：ROS 2 Jazzy 安装、EuRoC 转 ROS 2 bag、ATE/RPE 评估、VINS-Fusion 对比与接入 PX4 的验收门槛。"
+  current="/drone/"
+>
+  <section class="page-hero">
+    <div class="container">
+      <div class="page-hero-top">
+        <a href={url("/drone/labs/")}>无人机实验室</a>
+        <span>/</span>
+        <span>Lab 03</span>
+      </div>
+      <span class="eyebrow">Lab 03 · Offline VIO</span>
+      <h1>先把轨迹跑对，<br />再让飞机相信它。</h1>
+      <p>
+        Lab 02 的 <code>gz_x500_vision</code> 注入的是仿真真值，不是 VIO。这个 Lab 换真正的视觉惯性里程计：
+        在 EuRoC 上跑 OpenVINS，记录轨迹，用 ATE/RPE 与真值比较；再讨论 VINS-Fusion 与接入 PX4 的边界。
+      </p>
+      <div class="page-hero-meta">
+        <span>预计 <b>90–120 分钟</b></span>
+        <span>数据 <b>EuRoC V1_01_easy</b></span>
+        <span>算法 <b>OpenVINS MSCKF</b></span>
+        <span>指标 <b>ATE / RPE</b></span>
+        <span>前置 <b>Lab 02</b></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">i</span>
+        <div>
+          <h3>离线不是“降级”，而是唯一可归因的起点</h3>
+          <p>
+            同一段 bag、同一份标定、同一个提交，才能把误差归因到算法而不是风、控制或飞手。
+            真机上的 VIO 失败通常先表现为“位置慢慢漂”，而不是直接炸机；离线评测就是练习看见这种漂移。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Why offline"
+        title="三个必须先回答的问题"
+        lead="在把 VehicleOdometry 接进 EKF2 之前，先能回答：准不准、稳不稳、延迟多少。"
+      />
+      <div class="core-grid">
+        <article class="core-card reveal"><h3>准不准</h3><p>与 Vicon/Leica 真值比较 ATE 与 RPE；看绝对误差，也看每米漂移。没有真值就没有“感觉还行”。</p><div class="core-metrics"><span>ATE</span><span>RPE</span><span>真值</span></div></article>
+        <article class="core-card reveal"><h3>稳不稳</h3><p>初始化时间、跟丢次数、重定位行为、快速旋转与弱纹理下的表现；一次跑通不等于稳定。</p><div class="core-metrics"><span>init</span><span>tracking</span><span>failure</span></div></article>
+        <article class="core-card reveal"><h3>延迟多少</h3><p>相机-IMU 时间偏移、处理耗时、输出频率；PX4 的 EKF2_EV_DELAY 只能补固定延迟，补不了抖动。</p><div class="core-metrics"><span>dt</span><span>jitter</span><span>Hz</span></div></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Choose"
+        title="OpenVINS、VINS-Fusion，还是 ORB-SLAM3？"
+        lead="不是选“最强”，而是选与你目标匹配的误差模型、接口与维护状态。"
+      />
+      <div class="matrix-wrap reveal">
+        <table class="matrix">
+          <thead><tr><th scope="col">项目</th><th scope="col">方法</th><th scope="col">接口 / 维护</th><th scope="col">适合</th><th scope="col">主要代价</th></tr></thead>
+          <tbody>
+            <tr><td>OpenVINS</td><td>MSCKF 滤波 + SLAM 特征</td><td>ROS 1 / ROS 2，学术维护活跃</td><td>PX4 外部视觉、在线估计、标定可在线优化</td><td>参数多；快速运动与初始化敏感</td></tr>
+            <tr><td>VINS-Fusion</td><td>滑动窗口优化，支持双目/IMU/GPS</td><td>ROS 1 为主，ROS 2 多为社区移植</td><td>追求精度、GPS-VIO 融合、离线对比</td><td>Ubuntu 24.04 需容器或移植；资源占用高</td></tr>
+            <tr><td>ORB-SLAM3</td><td>特征 SLAM，多地图</td><td>ROS 1 封装为主</td><td>完整建图、重定位、研究基线</td><td>重；单目尺度与 IMU 初始化门槛高</td></tr>
+            <tr><td>SVO / ROVIO</td><td>半直接 / 滤波</td><td>研究代码</td><td>轻量、嵌入式上限评估</td><td>工程化与文档较弱</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="arch-note">
+        本 Lab 选 OpenVINS：ROS 2 接口清晰、EuRoC 配置现成、输出可直接对照 PX4 的 external vision 通路。
+        VINS-Fusion 作为第二基线，用同一段 bag 与同一套评估脚本比较。
+      </p>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Dataset"
+        title="EuRoC V1_01_easy：小、全、可复现"
+        lead="双目 20 Hz、IMU 200 Hz、Vicon 真值；约 145 s，足够暴露初始化和漂移问题。"
+      />
+      <div class="lab-steps">
+        <article class="lab-step reveal">
+          <span>01</span>
+          <div>
+            <h3>下载原始序列</h3>
+            <pre class="code-block"><code># 官方页面（ASL / ETH）
+https://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets
+
+# 本次实测使用的镜像（1.1 GB）
+curl -L -o V1_01_easy.zip \
+  https://huggingface.co/datasets/pepijn223/euroc-mirror/resolve/main/V1_01_easy.zip
+unzip V1_01_easy.zip -d ~/euroc</code></pre>
+            <p>目录应包含 <code>mav0/cam0</code>、<code>cam1</code>、<code>imu0</code>、<code>state_groundtruth_estimate0</code>。</p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>02</span>
+          <div>
+            <h3>为什么还要自己转 bag</h3>
+            <pre class="code-block"><code>python3 -m pip install rosbags pillow numpy
+python3 euroc_to_ros2.py --mav0 ~/euroc/mav0 --out ~/bags/V1_01_easy</code></pre>
+            <p>
+              官方 ROS 2 bag 放在 Google Drive，实测会触发配额限制；ETH 直连 bag 在部分网络不可达。
+              这个脚本把 ASL 目录直接写成 <code>sensor_msgs/Image</code> + <code>sensor_msgs/Imu</code>，大约 2 GB。
+            </p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>03</span>
+          <div>
+            <h3>核对话题与频率</h3>
+            <pre class="code-block"><code>ros2 bag info ~/bags/V1_01_easy
+# /cam0/image_raw  sensor_msgs/msg/Image  2912
+# /cam1/image_raw  sensor_msgs/msg/Image  2912
+# /imu0            sensor_msgs/msg/Imu    ~29k</code></pre>
+            <p>先确认数据本身正确，再怀疑算法。时间戳单位、帧数、频率是最便宜的检查。</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Install"
+        title="ROS 2 Jazzy + OpenVINS"
+        lead="官方安装文档停留在 Galactic；下面是 2026-11 在 Ubuntu 24.04 上实际跑通的组合。"
+      />
+      <div class="lab-steps">
+        <article class="lab-step reveal">
+          <span>01</span>
+          <div>
+            <h3>装 ROS 2 Jazzy</h3>
+            <pre class="code-block"><code>sudo apt update
+sudo apt install -y curl gnupg lsb-release
+export ROS_APT_SOURCE_VERSION=$(curl -s \
+  https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest \
+  | grep -F "tag_name" | awk -F\" '&#123;print $4&#125;')
+curl -L -o /tmp/ros2-apt-source.deb \
+  "https://github.com/ros-infrastructure/ros-apt-source/releases/download/$ROS_APT_SOURCE_VERSION/ros2-apt-source_$ROS_APT_SOURCE_VERSION.$(. /etc/os-release && echo $VERSION_CODENAME)_all.deb"
+sudo dpkg -i /tmp/ros2-apt-source.deb
+sudo apt update
+sudo apt install -y ros-jazzy-ros-base ros-jazzy-cv-bridge \
+  ros-jazzy-image-transport ros-jazzy-rosbag2 \
+  ros-jazzy-rosbag2-storage-default-plugins \
+  python3-colcon-common-extensions libeigen3-dev libboost-all-dev libceres-dev</code></pre>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>02</span>
+          <div>
+            <h3>编译 OpenVINS</h3>
+            <pre class="code-block"><code>mkdir -p ~/ov_ws/src && cd ~/ov_ws/src
+git clone --depth 1 https://github.com/rpng/open_vins.git
+cd ~/ov_ws
+
+# Jazzy 把 image_transport / cv_bridge / tf2_geometry_msgs 的头文件改成了 .hpp
+grep -rl "image_transport/image_transport.h\|tf2_geometry_msgs/tf2_geometry_msgs.h\|cv_bridge/cv_bridge.h" \
+  src/open_vins | xargs sed -i \
+  's|image_transport/image_transport.h|image_transport/image_transport.hpp|g; s|tf2_geometry_msgs/tf2_geometry_msgs.h|tf2_geometry_msgs/tf2_geometry_msgs.hpp|g; s|cv_bridge/cv_bridge.h|cv_bridge/cv_bridge.hpp|g'
+
+source /opt/ros/jazzy/setup.bash
+colcon build --parallel-workers 2 --cmake-args \
+  -DCMAKE_BUILD_TYPE=Release -DDISABLE_MATPLOTLIB=ON</code></pre>
+            <p>
+              4 GB 内存的虚拟机不要开满并行，<code>-j4</code> 编译 Eigen 模板容易触发 OOM。
+              <code>DISABLE_MATPLOTLIB=ON</code> 可以跳过 matplotlib-cpp 链接问题。上面的头文件补丁只针对 Jazzy；
+              其他发行版先确认文件名再改。
+            </p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Run"
+        title="播放 bag，跑一遍完整序列"
+        lead="先让估计器起来，再喂数据；播放结束后留几秒处理尾帧，再优雅退出。"
+      />
+      <div class="lab-steps">
+        <article class="lab-step reveal">
+          <span>01</span>
+          <div>
+            <h3>一条命令跑完</h3>
+            <pre class="code-block"><code>chmod +x run_openvins_euroc.sh
+./run_openvins_euroc.sh ~/bags/V1_01_easy ~/ov_results/v1_01</code></pre>
+            <p>脚本会启动节点、等待 IMU 订阅、播放 bag、停止节点，并保存轨迹到结果目录。</p>
+            <p>CPU 较弱时用 <code>RATE=0.5 ./run_openvins_euroc.sh ...</code> 放慢播放，先确认算法能跟上，再逐步提速。</p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>02</span>
+          <div>
+            <h3>或者手动分终端</h3>
+            <pre class="code-block"><code># 终端 A
+source /opt/ros/jazzy/setup.bash
+source ~/ov_ws/install/setup.bash
+ros2 launch ov_msckf subscribe.launch.py config:=euroc_mav
+
+# 终端 B
+ros2 bag play ~/bags/V1_01_easy --rate 1.0</code></pre>
+            <p>
+              手动模式适合看实时输出。要保存轨迹就用上面的脚本：直接启动节点并显式传
+              <code>filepath_est</code> / <code>filepath_std</code>。如果只加
+              <code>save_total_state:=true</code> 而不给路径，OpenVINS 会在
+              <code>boost::filesystem::create_directories</code> 的空父路径上崩溃（实测）。
+            </p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>03</span>
+          <div>
+            <h3>看三个频率</h3>
+            <pre class="code-block"><code>ros2 topic hz /cam0/image_raw   # ~20 Hz
+ros2 topic hz /imu0             # ~200 Hz
+ros2 topic hz /ov_msckf/poseimu # 估计输出</code></pre>
+            <p>如果相机不是 20 Hz，先查转换脚本与 bag 元数据，不要调估计器。</p>
+          </div>
+        </article>
+      </div>
+      <pre class="code-block code-block-tall reveal"><code>{runner}</code></pre>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Evaluate"
+        title="用 ATE / RPE 说话"
+        lead="轨迹先做 SE3 对齐，再算绝对误差；RPE 看每秒相对位移，最后折算成每米漂移。"
+      />
+      <div class="lab-steps">
+        <article class="lab-step reveal">
+          <span>01</span>
+          <div>
+            <h3>对齐并评估</h3>
+            <pre class="code-block"><code>python3 vio_eval.py \
+  --est ~/ov_results/v1_01/state_estimate.txt \
+  --gt ~/euroc/mav0/state_groundtruth_estimate0/data.csv \
+  --write-tum ~/ov_results/v1_01/aligned.tum</code></pre>
+            <p>默认 SE3 对齐；加 <code>--align sim3</code> 可以看尺度，但 VIO 的尺度本应可观，不应靠缩放掩盖问题。</p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>02</span>
+          <div>
+            <h3>怎么读这些数</h3>
+            <pre class="code-block"><code>ATE RMSE     绝对轨迹误差（米）
+RPE @ 1s     每秒相对位移误差（米）
+drift         RPE / 行驶距离（%）
+scale        sim3 对齐后的尺度（应接近 1）</code></pre>
+            <p>V1_01_easy 上，ATE 小于 0.1 m 很好，0.1–0.2 m 可用，0.2–0.5 m 要查延迟与标定，大于 1 m 先别接飞控。1 s RPE 建议小于 3 cm；比例漂移在慢速、旋转多的序列上会被放大，跨序列比较没有意义。</p>
+          </div>
+        </article>
+      </div>
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">✓</span>
+        <div>
+          <h3>实测记录 · 2026-11-15</h3>
+          <p>
+            环境：Ubuntu 24.04 QEMU VM，4 vCPU / 4.8 GB RAM，无 GPU；ROS 2 Jazzy；OpenVINS master；
+            EuRoC V1_01_easy（2912 对双目帧，20 Hz，IMU 200 Hz）。转换后的 ROS 2 bag 约 2.0 GB。
+          </p>
+          <p>
+            运行：节点在初始化后开始写轨迹，共 <b>2780 个位姿 / 139.0 s</b>；SE3 对齐后
+            <b>ATE RMSE 0.060 m</b>（均值 0.057 m，p95 0.087 m，最大 0.116 m），
+            <b>1 s RPE 0.018 m</b>，估计尺度 1.000。完整重跑一次得到 ATE 0.058 m，说明结果可复现。
+            处理耗时约 143 s，与 145.5 s 的数据时长基本持平（20 Hz 双目，4 vCPU，无 GPU）。
+          </p>
+          <p>
+            注意：轨迹文件从初始化完成后才开始，开头约 6 s 没有估计；这不是“漏了几帧”，而是滤波器
+            需要静止窗口。评估脚本按时间重叠自动对齐，不要求两边帧数相同。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Compare"
+        title="VINS-Fusion：同一段数据，第二意见"
+        lead="换算法不换数据、不换真值、不换指标，否则比较没有意义。"
+      />
+      <div class="lab-steps">
+        <article class="lab-step reveal">
+          <span>01</span>
+          <div>
+            <h3>容器里跑 ROS 1 版本</h3>
+            <pre class="code-block"><code>docker run -it --rm --net=host \
+  -v ~/bags:/data -v ~/euroc:/euroc \
+  ros:noetic-ros-base bash</code></pre>
+            <p>VINS-Fusion 官方主线是 ROS 1；Ubuntu 24.04 上最省事的是 Noetic 容器，或使用固定提交的 ROS 2 移植。</p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>02</span>
+          <div>
+            <h3>同配置、同序列</h3>
+            <pre class="code-block"><code>rosrun vins vins_node \
+  ~/catkin_ws/src/VINS-Fusion/config/euroc/euroc_stereo_imu_config.yaml
+rosbag play /data/V1_01_easy.bag</code></pre>
+            <p>输出轨迹转成 TUM 格式后，用同一个 <code>vio_eval.py</code> 计算 ATE/RPE。</p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>03</span>
+          <div>
+            <h3>比较什么</h3>
+            <pre class="code-block"><code>精度：ATE / RPE / 尺度
+稳定性：跟丢次数 / 初始化时间
+资源：CPU 占用 / 单帧耗时 / 内存
+工程：ROS 版本 / 标定流程 / 输出接口</code></pre>
+            <p>只比 ATE 会误导：一个更容易跟丢、延迟更大的算法，平均误差可能更低。</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="To PX4"
+        title="从离线轨迹到 EKF2 外部视觉"
+        lead="坐标系、时间、协方差、失效检测，任何一项没处理，EKF 都会“礼貌地”忽略你或慢慢漂。"
+      />
+      <div class="core-grid">
+        <article class="core-card reveal"><h3>坐标系</h3><p>VIO 多为 z-up 世界系；PX4 要 NED / FRD。转换 yaw、位置与速度，别只翻 z 轴。</p><div class="core-metrics"><span>ENU→NED</span><span>yaw</span><span>外参</span></div></article>
+        <article class="core-card reveal"><h3>时间</h3><p>相机-IMU 时间偏移、处理延迟、时间戳抖动。EKF2_EV_DELAY 补偿固定延迟，不补偿抖动。</p><div class="core-metrics"><span>dt</span><span>delay</span><span>jitter</span></div></article>
+        <article class="core-card reveal"><h3>协方差</h3><p>不要发全零或过度自信的协方差；EKF 会信你，然后一起漂。用离线残差校准噪声。</p><div class="core-metrics"><span>cov</span><span>NEES</span><span>innovation</span></div></article>
+        <article class="core-card reveal"><h3>接口</h3><p>PX4 v1.15+ 优先走 uXRCE-DDS 的 <code>VehicleOdometry</code>；老系统可用 MAVLink ODOMETRY。</p><div class="core-metrics"><span>uXRCE-DDS</span><span>MAVLink</span><span>EKF2</span></div></article>
+      </div>
+      <div class="matrix-wrap reveal">
+        <table class="matrix">
+          <thead><tr><th scope="col">验收项</th><th scope="col">门槛（建议）</th><th scope="col">怎么测</th></tr></thead>
+          <tbody>
+            <tr><td>离线 ATE</td><td>&lt; 0.2 m（V1_01）</td><td>同一 bag 重复 3 次，看离散度</td></tr>
+            <tr><td>1 s RPE</td><td>&lt; 3 cm</td><td>固定窗口；与同序列基线比较</td></tr>
+            <tr><td>初始化</td><td>&lt; 5 s，且可重复</td><td>从静止开始，记录成功次数</td></tr>
+            <tr><td>输出频率</td><td>≥ 20 Hz，抖动可控</td><td>ros2 topic hz / 时间戳差</td></tr>
+            <tr><td>端到端延迟</td><td>&lt; 50 ms（含图像）</td><td>闪光/快速平移对照；扫 EKF2_EV_DELAY</td></tr>
+            <tr><td>失效检测</td><td>跟丢时能上报</td><td>遮相机/快速旋转，观察 EKF 与 failsafe</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">→</span>
+        <div>
+          <h3>下一步：地面静态 → 系留悬停 → 航线</h3>
+          <p>
+            先把 VIO 输出接到 PX4，在地面静态比较位置与 yaw；再系留/护网悬停；最后才做航线。
+            每一步都记录 innovation、模式切换与失效行为。不要在没做延迟与坐标系检查时直接飞。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href={url("/drone/labs/vio/")}>回到 Lab 02</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Troubleshooting"
+        title="常见失败"
+        lead="先证明数据流对，再证明算法对，最后才讨论飞控。"
+      />
+      <div class="matrix-wrap reveal">
+        <table class="matrix failure-table">
+          <thead><tr><th scope="col">现象</th><th scope="col">可能原因</th><th scope="col">处理</th></tr></thead>
+          <tbody>
+            {failures.map((item) => (
+              <tr><td>{item.mode}</td><td>{item.cause}</td><td>{item.mitigation}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">!</span>
+        <div>
+          <h3>数据与代码</h3>
+          <p>
+            下载：<a href={url("/labs/euroc_to_ros2.py")}>euroc_to_ros2.py</a>、
+            <a href={url("/labs/vio_eval.py")}>vio_eval.py</a>、
+            <a href={url("/labs/run_openvins_euroc.sh")}>run_openvins_euroc.sh</a>。
+            所有实验仅用于离线数据集与 SITL；真机 VIO 必须先做标定、时间同步与失效检测。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href={url("/drone/safety/")}>安全页</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
