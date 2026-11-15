@@ -3365,15 +3365,65 @@ html.reduce-motion .reveal {
 }
 
 .industry-timeline {
-  border-top: 1px solid var(--line);
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding: 4px 0 14px;
+  border-top: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.industry-timeline::-webkit-scrollbar {
+  height: 6px;
+}
+
+.industry-timeline::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.industry-timeline::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 99px;
 }
 
 .industry-timeline li {
-  display: grid;
-  grid-template-columns: 118px minmax(0, 1fr);
-  gap: 22px;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--line);
+  position: relative;
+  flex: 0 0 286px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  padding: 36px 18px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+}
+
+.industry-timeline li::before {
+  content: "";
+  position: absolute;
+  top: 20px;
+  left: 0;
+  width: calc(100% + 12px);
+  height: 1px;
+  background: var(--line-strong);
+}
+
+.industry-timeline li:last-child::before {
+  background: linear-gradient(90deg, var(--line-strong), transparent);
+}
+
+.industry-timeline li::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 18px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 2px solid var(--accent);
 }
 
 .industry-timeline time {
@@ -3381,7 +3431,21 @@ html.reduce-motion .reveal {
   font-size: 0.68rem;
   letter-spacing: 0.04em;
   color: var(--accent);
-  padding-top: 3px;
+  padding-top: 0;
+  margin-bottom: 7px;
+}
+
+.timeline-hint {
+  margin: 6px 0 0;
+  color: var(--faint);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+}
+
+.timeline-hint span {
+  color: var(--accent);
+  margin-left: 4px;
 }
 
 .timeline-org {
@@ -4516,10 +4580,13 @@ html.reduce-motion .reveal {
     margin-left: 0;
   }
 
-  .industry-timeline li,
   .snapshot-list li {
     grid-template-columns: 76px minmax(0, 1fr);
     gap: 12px;
+  }
+
+  .industry-timeline li {
+    flex-basis: 250px;
   }
 
   .org-card {
