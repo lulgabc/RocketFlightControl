@@ -1,10 +1,12 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import SectionHead from "../components/SectionHead.astro";
+import { url } from "../lib/url";
 ---
 
 <BaseLayout
   title="交互工具箱"
-  description="三个火箭飞控常用估算工具：齐奥尔科夫斯基 Δv 计算器、ISA 标准大气与动压计算器、单轴姿态 PID 阶跃响应模拟器。全部在浏览器本地运行。"
+  description="火箭飞控估算工具与验证选型：齐奥尔科夫斯基 Δv、ISA 大气与动压、单轴姿态 PID，以及 Rust/形式化验证工具（Kani、Creusot、Verus、Aeneas、KeYmaera X、CORA、SPARK）的适用边界。"
   current="/toolkit/"
 >
   <section class="page-hero">
@@ -13,15 +15,16 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <span class="dot"></span>
         <span>Toolkit / run locally</span>
       </div>
-      <h1>先算数量级，<br />再写控制器。</h1>
+      <h1>先算数量级，<br />再写控制器，<br />再证明它。</h1>
       <p>
         三个最常用的小工具：推进性能、大气环境与单轴控制。它们不替代六自由度仿真，
-        但能在你运行大程序之前，快速判断参数是否离谱。所有计算都在浏览器本地完成。
+        但能在你运行大程序之前，快速判断参数是否离谱。下面再加一张验证选型表：
+        什么时候该用 Kani，什么时候该上 KeYmaera X，什么时候只需要运行时监控。
       </p>
       <div class="page-hero-meta">
-        <span>工具 <b>3 个</b></span>
+        <span>计算器 <b>3 个</b></span>
+        <span>验证选型 <b>10+ 工具</b></span>
         <span>依赖 <b>无后端 · 无追踪</b></span>
-        <span>适用 <b>概念设计与教学</b></span>
         <span>注意 <b>结果不含重力与气动损失（除注明外）</b></span>
       </div>
     </div>
@@ -282,6 +285,69 @@ import BaseLayout from "../layouts/BaseLayout.astro";
             </details>
           </div>
         </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight" id="verify">
+    <div class="container">
+      <SectionHead
+        eyebrow="Verify"
+        title="验证工具箱：先问要证明什么"
+        lead="形式化验证不是一种工具，而是四种不同承诺：没有未定义行为、满足函数契约、包线内安全、运行时兜底。"
+      />
+      <div class="matrix-wrap reveal">
+        <table class="matrix">
+          <thead><tr><th scope="col">你想确认的事</th><th scope="col">首选工具</th><th scope="col">边界</th></tr></thead>
+          <tbody>
+            <tr><td>Rust 代码没有 panic / 越界 / UB</td><td>Kani + Miri</td><td>有界检查；不能证明所有输入</td></tr>
+            <tr><td>函数满足前置/后置条件</td><td>Creusot / Verus</td><td>要写规格、循环不变量与 ghost 代码</td></tr>
+            <tr><td>把 Rust 转到 Lean / F* 做数学证明</td><td>Aeneas / hax</td><td>工具链长；适合高价值小模块</td></tr>
+            <tr><td>混成系统、避撞、制导包线</td><td>KeYmaera X</td><td>建模错误会让证明失去意义</td></tr>
+            <tr><td>闭环可达性与神经网络控制器</td><td>CORA / JuliaReach / NNV</td><td>保守近似；可能过度保守</td></tr>
+            <tr><td>既有 C / Ada 飞控模块</td><td>Frama-C / SPARK</td><td>需要契约与可分析的代码结构</td></tr>
+            <tr><td>需求本身是否一致、无歧义</td><td>NASA FRET</td><td>不证明实现，只暴露需求问题</td></tr>
+            <tr><td>运行时监控与最后一道保险</td><td>Copilot</td><td>不能替代离线证明，只争取处置时间</td></tr>
+            <tr><td>工具链能否进入认证证据链</td><td>Ferrocene</td><td>证明的是工具，不是你的飞控代码</td></tr>
+            <tr><td>内核隔离与能力模型</td><td>seL4</td><td>是地基，不是完整飞控栈</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="core-grid" style="margin-top: 22px;">
+        <article class="core-card reveal">
+          <h3>有界 ≠ 无界</h3>
+          <p>Kani 默认在有限步数内探索；循环上界、输入范围和假设决定结论。把“没找到反例”说成“已证明”是最常见的误读。</p>
+          <div class="core-metrics"><span>bounded</span><span>harness</span><span>assume</span></div>
+        </article>
+        <article class="core-card reveal">
+          <h3>类型安全 ≠ 功能正确</h3>
+          <p>Rust 能排除一大类内存错误，但控制律符号写反、单位混用、饱和逻辑错误，类型系统不会替你发现。</p>
+          <div class="core-metrics"><span>contract</span><span>unit</span><span>invariant</span></div>
+        </article>
+        <article class="core-card reveal">
+          <h3>证明 ≠ 认证</h3>
+          <p>Ferrocene 让编译器与运行时可用于认证项目；你的需求、架构、测试、配置管理与工具鉴定仍要自己补齐。</p>
+          <div class="core-metrics"><span>DO-178C</span><span>ECSS</span><span>evidence</span></div>
+        </article>
+        <article class="core-card reveal">
+          <h3>离线证明 + 在线监控</h3>
+          <p>不可完全证明的部分（感知、学习控制、复杂环境）用 Copilot 之类生成监控器，在越界时切换或终止，而不是假装它已被证明。</p>
+          <div class="core-metrics"><span>monitor</span><span>failsafe</span><span>runtime</span></div>
+        </article>
+      </div>
+
+      <div class="callout reveal" style="margin-top: 22px;">
+        <span class="callout-icon" aria-hidden="true">→</span>
+        <div>
+          <h3>在飞控里怎么落地</h3>
+          <p>
+            IMU 驱动与协议解析先用 Miri + Kani 扫 UB 和 panic；控制律的限幅、饱和与模式切换用 Creusot/Verus
+            写契约；避撞与制导包线用 KeYmaera X 或 CORA；学习控制器用 NNV；最后用 Copilot 生成运行时监控。
+            完整注释列表在资源库的“Rust 生态”和“形式化验证”分类。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href={url("/resources/")}>打开资源库</a>
       </div>
     </div>
   </section>

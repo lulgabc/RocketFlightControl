@@ -23,7 +23,7 @@ const levelClass = (level: string) =>
 
 <BaseLayout
   title="资源库"
-  description="火箭飞控精选资源：推进、动力学、控制、估计、优化与系统工程书籍；MIT、Stanford 公开课；PX4、ArduPilot、RocketPy、Basilisk 等开源项目；仿真工具、标准与安全规范、社区与数据。"
+  description="火箭飞控精选资源：推进、动力学、控制、估计、优化与系统工程书籍；MIT、Stanford 公开课；PX4、ArduPilot、RocketPy、Basilisk 等开源项目；Rust 安全关键生态、Kani/Creusot/Verus 与 KeYmaera X/CORA/SPARK 等形式化验证工具；仿真、标准与数据。"
   current="/resources/"
 >
   <section class="page-hero">
@@ -58,6 +58,19 @@ const levelClass = (level: string) =>
           </p>
         </div>
         <a class="btn btn-ghost btn-sm" href={url("/flight-software/#specialized")}>查看工程资源</a>
+      </div>
+
+      <div class="callout reveal" style="margin-bottom: 26px;">
+        <span class="callout-icon" aria-hidden="true">Rust</span>
+        <div>
+          <h3>Rust 与形式化验证：先分清三件事</h3>
+          <p>
+            类型系统解决内存与并发安全；Kani / Creusot / Verus / Aeneas 解决功能正确性；
+            Copilot / KeYmaera X / CORA 解决运行时监控与混成系统包线。Ferrocene 让工具链可认证，
+            但不等于你的飞控代码已经被证明。按问题选工具，不要按热度选。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href={url("/toolkit/#verify")}>验证选型表</a>
       </div>
 
       <div class="resource-cats" role="group" aria-label="按分类筛选资源">
