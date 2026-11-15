@@ -8,6 +8,7 @@ import { DOMAINS } from "../data/fundamentals";
 import { PROJECTS } from "../data/projects";
 import { RESOURCES } from "../data/resources";
 import { INDUSTRY_ORGS } from "../data/industry";
+import { ENGINEERING_TOPICS } from "../data/engineering";
 
 const featuredProjects = ["6dof", "mcu-fc", "sounding"]
   .map((id) => PROJECTS.find((project) => project.id === id))
@@ -304,6 +305,31 @@ const projectCount = PROJECTS.length;
             <h3>{org.name}</h3>
             <p>{org.tagline}</p>
             <span class="org-mini-signal">{org.compare.signature}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Engineering core"
+        title="发动机、飞船、轨道：五个硬约束"
+        lead="五个知识页：从推力方程、轨道能量，到热防护与结构屈曲。每页给出公式、权衡、失效模式、参考型号和可以直接跑起来的开源项目。"
+        linkHref={url("/engineering/")}
+        linkLabel="进入工程核心"
+      />
+      <div class="eng-mini-grid">
+        {ENGINEERING_TOPICS.map((topic) => (
+          <a
+            class:list={["eng-mini", `accent-${topic.accent}`, "reveal"]}
+            href={url(`/engineering/${topic.slug}/`)}
+          >
+            <span class="eng-mini-index">{topic.index}</span>
+            <h3>{topic.title}</h3>
+            <p>{topic.tagline}</p>
+            <span class="eng-mini-link">打开 →</span>
           </a>
         ))}
       </div>

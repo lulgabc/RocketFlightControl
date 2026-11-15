@@ -172,6 +172,7 @@ export const INDUSTRY_ORGS: IndustryOrg[] = [
       "飞控源码、控制器参数、内核配置、故障阈值与 CVXGEN 模型均未公开；本页只采用官方任务页、公开 AMA、监管文件与主流报道。",
     learn: [
       { label: "C/C++ 飞控与通信专线", href: "/flight-software/" },
+      { label: "工程核心 · 火箭发动机", href: "/engineering/propulsion/" },
       { label: "阶段 03 · 导航、估计与制导", href: "/roadmap/#gnc" },
       { label: "项目 12 · 垂直回收", href: "/projects/#landing" },
     ],
@@ -278,7 +279,9 @@ export const INDUSTRY_ORGS: IndustryOrg[] = [
       "飞控软件、航电与故障管理细节未公开；爆炸原因来自 CEO 公开表述与 recoverable hardware 检查，最终报告可能继续更新。",
     learn: [
       { label: "阶段 01 · 飞行动力学", href: "/roadmap/#dynamics" },
+      { label: "工程核心 · 火箭发动机", href: "/engineering/propulsion/" },
       { label: "阶段 04 · 嵌入式飞控", href: "/roadmap/#embedded" },
+      { label: "工程核心 · 结构材料", href: "/engineering/structures/" },
       { label: "项目 11 · 探空火箭", href: "/projects/#sounding" },
     ],
     compare: {
@@ -439,6 +442,7 @@ export const INDUSTRY_ORGS: IndustryOrg[] = [
       "国防项目的载荷、算法、抗辐射与加密细节通常不公开；本页只使用公司新闻稿、NASA 资料与供应商公开信息，不推断未披露能力。",
     learn: [
       { label: "阶段 05 · 系统验证与安全", href: "/roadmap/#systems" },
+      { label: "工程核心 · 太空飞船", href: "/engineering/spacecraft/" },
       { label: "知识域 · 嵌入式与实时", href: "/fundamentals/#embedded" },
       { label: "C/C++ 工程 · 容错与 HIL", href: "/flight-software/#verification" },
     ],
@@ -518,6 +522,7 @@ export const INDUSTRY_ORGS: IndustryOrg[] = [
       "Starliner 认证细节、SLS 生产节拍与国防载荷参数未完全公开；NASA OIG 报告提供了少见的独立审查视角。",
     learn: [
       { label: "阶段 05 · 验证与安全", href: "/roadmap/#systems" },
+      { label: "工程核心 · 太空飞船", href: "/engineering/spacecraft/" },
       { label: "阶段 04 · 嵌入式飞控", href: "/roadmap/#embedded" },
       { label: "C/C++ 工程 · 容错与 HIL", href: "/flight-software/#verification" },
     ],
@@ -604,6 +609,7 @@ export const INDUSTRY_ORGS: IndustryOrg[] = [
     learn: [
       { label: "C/C++ 工程 · F´ / cFS", href: "/flight-software/#fsw" },
       { label: "阶段 05 · 系统验证", href: "/roadmap/#systems" },
+      { label: "工程核心 · 轨道力学", href: "/engineering/orbits/" },
       { label: "知识域 · 系统工程", href: "/fundamentals/#systems" },
     ],
     compare: {
@@ -690,6 +696,7 @@ export const INDUSTRY_ORGS: IndustryOrg[] = [
     learn: [
       { label: "阶段 05 · 系统验证", href: "/roadmap/#systems" },
       { label: "C/C++ 工程 · CCSDS", href: "/flight-software/#comms" },
+      { label: "工程核心 · 轨道力学", href: "/engineering/orbits/" },
       { label: "知识域 · 系统工程", href: "/fundamentals/#systems" },
     ],
     compare: {

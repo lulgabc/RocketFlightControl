@@ -1,0 +1,152 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { url } from "../../lib/url";
+import { ENGINEERING_TOPICS } from "../../data/engineering";
+
+const totalEquations = ENGINEERING_TOPICS.reduce((sum, topic) => sum + topic.equations.length, 0);
+const totalResources = ENGINEERING_TOPICS.reduce((sum, topic) => sum + topic.resources.length, 0);
+const totalProjects = ENGINEERING_TOPICS.reduce((sum, topic) => sum + topic.projects.length, 0);
+
+const review = [
+  { index: "01", title: "需求可追溯", body: "每条性能/安全需求都能追到设计、测试与飞行数据；没有“大家都知道”的隐含需求。" },
+  { index: "02", title: "预算有余量", body: "质量、功率、热、数据、Δv 都有明确余量与最坏情况，而不是标称值。" },
+  { index: "03", title: "载荷包线闭合", body: "发射、飞行、再入、着陆的载荷与环境包线全部覆盖，含声振、热与压力。" },
+  { index: "04", title: "单点失效可控", body: "FMEA/FTA 找得到单点，FDIR 有降级/安全模式，关键冗余真正独立。" },
+  { index: "05", title: "模型可验证", body: "每个仿真都有参考解、试验或飞行数据对照；模型偏差有量化解释。" },
+  { index: "06", title: "制造可复现", body: "工艺参数、材料批次、检验记录与偏差处理可追溯；不是“老师傅手感”。" },
+  { index: "07", title: "测试分层", body: "单元 → 部件 → 系统 → HIL → 飞行，逐层验证；失败可复现、可定位。" },
+  { index: "08", title: "安全与合规", body: "推进剂、压力、射频、空域与发射许可都有独立评审与中止方案。" },
+];
+---
+
+<BaseLayout
+  title="工程核心"
+  description="火箭发动机、太空飞船、轨道力学、再入热防护、结构材料与制造的硬核知识库：第一性原理、工程权衡、失效模式、开源项目与专业资源。"
+  current="/engineering/"
+>
+  <section class="page-hero">
+    <div class="container">
+      <div class="page-hero-top">
+        <span class="dot"></span>
+        <span>Engineering core / five disciplines</span>
+      </div>
+      <h1>把火箭拆成<br />五个硬核问题。</h1>
+      <p>
+        发动机、飞船、轨道、再入、结构——这不是五门独立的课，而是同一枚飞行器的五个约束面。
+        每页都从第一性原理出发，给出公式、工程权衡、失效模式、开源项目与可继续深入的资料。
+      </p>
+      <div class="page-hero-meta">
+        <span>知识域 <b>{ENGINEERING_TOPICS.length} 个</b></span>
+        <span>核心公式 <b>{totalEquations} 组</b></span>
+        <span>开源项目 <b>{totalProjects} 个</b></span>
+        <span>专业资源 <b>{totalResources} 条</b></span>
+        <span>快照 <b>2026-11-15</b></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <SectionHead
+        eyebrow="Dependency map"
+        title="先建环境，再谈系统"
+        lead="轨道决定环境与窗口，飞船把子系统装进预算，发动机/结构/热防护决定能不能实现，验证决定能不能信。顺序不是绝对的，但依赖关系是。"
+      />
+      <div class="eng-map reveal">
+        <div class="eng-map-step">
+          <span>01</span>
+          <h3>轨道</h3>
+          <p>环境、窗口、Δv、覆盖</p>
+        </div>
+        <div class="eng-map-arrow" aria-hidden="true">→</div>
+        <div class="eng-map-step">
+          <span>02</span>
+          <h3>飞船</h3>
+          <p>总体、子系统、预算</p>
+        </div>
+        <div class="eng-map-arrow" aria-hidden="true">→</div>
+        <div class="eng-map-step">
+          <span>03</span>
+          <h3>发动机 / 结构 / 再入</h3>
+          <p>推力、承载、热防护</p>
+        </div>
+        <div class="eng-map-arrow" aria-hidden="true">→</div>
+        <div class="eng-map-step">
+          <span>04</span>
+          <h3>验证</h3>
+          <p>仿真、试验、HIL、飞行</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Five disciplines"
+        title="五个知识域，五套硬约束"
+        lead="每个页面都按“公式 → 类型/子系统 → 权衡 → 失效 → 参考型号 → 资源/项目”组织，避免只收藏不理解。"
+      />
+      <div class="eng-grid">
+        {ENGINEERING_TOPICS.map((topic) => (
+          <a
+            class:list={["eng-card", `accent-${topic.accent}`, "reveal"]}
+            href={url(`/engineering/${topic.slug}/`)}
+          >
+            <div class="eng-card-top">
+              <span class="eng-index">{topic.index}</span>
+              <span class="tag">{topic.en}</span>
+            </div>
+            <h2>{topic.title}</h2>
+            <p>{topic.tagline}</p>
+            <div class="eng-card-stats">
+              {topic.stats.slice(0, 3).map((stat) => (
+                <div>
+                  <b>{stat.value}</b>
+                  <span>{stat.label}</span>
+                </div>
+              ))}
+            </div>
+            <span class="eng-card-link">进入知识页 →</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Professional review"
+        title="行业视角的八条自检"
+        lead="下面这份清单不针对某个型号，而是用来判断一套设计/仿真/报告是否“像一个专业团队做出来的”。"
+      />
+      <div class="review-grid">
+        {review.map((item) => (
+          <article class="review-card reveal">
+            <span class="review-index">{item.index}</span>
+            <h3>{item.title}</h3>
+            <p>{item.body}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">→</span>
+        <div>
+          <h3>知识页不是替代项目和飞行</h3>
+          <p>
+            这些页面负责建立“为什么”和“边界”；真正的能力来自六自由度、EKF、HIL、台架与飞行复盘。
+            建议把每个知识点都绑定到一个可运行项目或一份可复查的报告。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href={url("/projects/")}>回到项目阶梯</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
