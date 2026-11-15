@@ -7,6 +7,7 @@ import { INDUSTRY_ORGS, INDUSTRY_TIMELINE, INDUSTRY_THEMES } from "../../data/in
 const commercial = INDUSTRY_ORGS.filter((org) => org.kind === "商业公司").length;
 const agencies = INDUSTRY_ORGS.length - commercial;
 const sourceCount = INDUSTRY_ORGS.reduce((sum, org) => sum + org.sources.length, 0);
+const logoFor = (slug: string) => `${import.meta.env.BASE_URL}logos/${slug}.png`;
 ---
 
 <BaseLayout
@@ -35,19 +36,56 @@ const sourceCount = INDUSTRY_ORGS.reduce((sum, org) => sum + org.sources.length,
     </div>
   </section>
 
-  <section class="section">
+  <section class="section org-section">
     <div class="container">
-      <div class="callout reveal">
+      <SectionHead
+        eyebrow="Seven organizations"
+        title="七家机构，七张工程名片"
+        lead="每张卡片只放最能代表其 2026 状态的信息。点进子页面看完整项目、技术栈、研究重点与来源。"
+      />
+      <div class="org-grid">
+        {INDUSTRY_ORGS.map((org) => (
+          <a
+            class:list={["org-card", `accent-${org.accent}`, "reveal"]}
+            href={url(`/industry/${org.slug}/`)}
+          >
+            <div class="org-card-head">
+              <div class="org-logo">
+                <img
+                  src={logoFor(org.slug)}
+                  alt={`${org.name} logo`}
+                  loading="lazy"
+                />
+              </div>
+              <span class="org-arrow" aria-hidden="true">→</span>
+            </div>
+            <h2>{org.name}</h2>
+            <div class="org-zh">{org.nameZh}</div>
+            <p class="org-tagline">{org.tagline}</p>
+            <div class="org-card-foot">
+              <span>{org.compare.signature}</span>
+              <span>{org.stats[1].value} {org.stats[1].label}</span>
+            </div>
+          </a>
+        ))}
+      </div>
+      <p class="logo-note">机构标识仅用于识别，版权归各机构所有。</p>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <div class="callout callout-compact reveal">
         <span class="callout-icon" aria-hidden="true">i</span>
         <div>
           <h3>先读边界：公开资料不是内部图纸</h3>
           <p>
-            上市公司的投资者材料、政府任务页、NASA OIG 报告与官方新闻稿是可核实的主干；
-            飞控源码、控制器参数、国防载荷细节与供应链良率通常不公开。本页不把“招聘信息里的技术词”
-            当成已部署能力，也不把论文原型当成在轨系统。所有日期以 2026-11-15 为准，后续会变。
+            上市公司投资者材料、政府任务页、NASA OIG 与官方新闻稿是可核实的主干；
+            飞控源码、控制器参数、国防载荷与供应链良率通常不公开。本页不把招聘词当成已部署能力，
+            也不把论文原型当成在轨系统。
           </p>
         </div>
-        <a class="btn btn-ghost btn-sm" href={url("/about/#safety")}>阅读安全边界</a>
+        <a class="btn btn-ghost btn-sm" href={url("/about/#safety")}>安全边界</a>
       </div>
     </div>
   </section>
@@ -74,51 +112,6 @@ const sourceCount = INDUSTRY_ORGS.reduce((sum, org) => sum + org.sources.length,
       <p class="timeline-hint">
         横向滚动查看全部 {INDUSTRY_TIMELINE.length} 个节点 <span aria-hidden="true">→</span>
       </p>
-    </div>
-  </section>
-
-  <section class="section tight">
-    <div class="container">
-      <SectionHead
-        eyebrow="Seven organizations"
-        title="七家机构，七张工程名片"
-        lead="每张卡片只放最能代表其 2026 状态的三件事。点进子页面看完整项目、技术栈、研究重点与来源。"
-      />
-      <div class="org-grid">
-        {INDUSTRY_ORGS.map((org) => (
-          <a
-            class:list={["org-card", `accent-${org.accent}`, "reveal"]}
-            href={url(`/industry/${org.slug}/`)}
-          >
-            <div class="org-card-top">
-              <div>
-                <span class="org-kind">{org.kind} · {org.country}</span>
-                <h2>{org.name}</h2>
-                <div class="org-zh">{org.nameZh}</div>
-              </div>
-              <span class="org-arrow" aria-hidden="true">→</span>
-            </div>
-            <p class="org-tagline">{org.tagline}</p>
-            <div class="org-focus">
-              {org.focus.slice(0, 3).map((item) => (
-                <span>{item}</span>
-              ))}
-            </div>
-            <div class="org-stats">
-              {org.stats.slice(0, 3).map((stat) => (
-                <div>
-                  <b>{stat.value}</b>
-                  <span>{stat.label}</span>
-                </div>
-              ))}
-            </div>
-            <div class="org-card-foot">
-              <span>{org.compare.signature}</span>
-              <span>{org.founded} 成立</span>
-            </div>
-          </a>
-        ))}
-      </div>
     </div>
   </section>
 

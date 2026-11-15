@@ -3468,10 +3468,15 @@ html.reduce-motion .reveal {
   line-height: 1.65;
 }
 
+.org-section {
+  padding-top: clamp(38px, 4.5vw, 58px);
+  padding-bottom: clamp(26px, 3.5vw, 40px);
+}
+
 .org-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .org-mini-grid {
@@ -3533,12 +3538,12 @@ html.reduce-motion .reveal {
 .org-card {
   display: flex;
   flex-direction: column;
-  padding: 22px;
+  padding: 14px 14px 12px;
   border: 1px solid var(--line);
   border-top: 2px solid var(--org-accent);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   background:
-    linear-gradient(180deg, var(--org-soft), transparent 38%),
+    linear-gradient(180deg, var(--org-soft), transparent 46%),
     var(--panel);
   color: var(--text);
   transition: transform 0.2s, border-color 0.2s, background 0.2s;
@@ -3551,30 +3556,113 @@ html.reduce-motion .reveal {
   text-decoration: none;
 }
 
+.org-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.org-logo {
+  height: 36px;
+  min-width: 96px;
+  max-width: 132px;
+  display: flex;
+  align-items: center;
+  padding: 5px 8px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 7px;
+  background: #f4f6f9;
+}
+
+.org-logo img {
+  display: block;
+  max-width: 100%;
+  max-height: 24px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.org-card h2 {
+  font-size: 1.04rem;
+  margin-top: 8px;
+  letter-spacing: -0.02em;
+}
+
+.org-zh {
+  margin-top: 1px;
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+
+.org-tagline {
+  margin: 6px 0 10px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.org-card-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+  color: var(--faint);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  line-height: 1.45;
+}
+
+.org-card-foot span:first-child {
+  color: var(--org-accent);
+}
+
+.org-card-foot span:last-child {
+  text-align: right;
+}
+
+.logo-note {
+  margin: 8px 0 0;
+  color: var(--faint);
+  font-size: 0.62rem;
+  line-height: 1.5;
+}
+
+.callout-compact {
+  padding: 15px 18px;
+  gap: 16px;
+}
+
+.callout-compact .callout-icon {
+  width: 30px;
+  height: 30px;
+  font-size: 0.76rem;
+}
+
+.callout-compact h3 {
+  font-size: 0.88rem;
+  margin-bottom: 2px;
+}
+
+.callout-compact p {
+  font-size: 0.73rem;
+  line-height: 1.58;
+}
+
+.callout-compact .btn {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 0.72rem;
+}
+
 .org-card-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-}
-
-.org-kind {
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.08em;
-  color: var(--faint);
-  text-transform: uppercase;
-}
-
-.org-card h2 {
-  font-size: clamp(1.3rem, 2.4vw, 1.7rem);
-  margin-top: 3px;
-}
-
-.org-zh {
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 0.76rem;
 }
 
 .org-arrow {
@@ -3585,13 +3673,6 @@ html.reduce-motion .reveal {
 
 .org-card:hover .org-arrow {
   transform: translateX(3px);
-}
-
-.org-tagline {
-  margin: 12px 0 10px;
-  color: var(--muted);
-  font-size: 0.84rem;
-  line-height: 1.6;
 }
 
 .org-focus {
@@ -3634,18 +3715,6 @@ html.reduce-motion .reveal {
   color: var(--faint);
   font-size: 0.64rem;
   line-height: 1.4;
-}
-
-.org-card-foot {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--line);
-  color: var(--faint);
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
 }
 
 .industry-table {
@@ -4524,7 +4593,10 @@ html.reduce-motion .reveal {
     justify-self: start;
   }
 
-  .org-grid,
+  .org-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .theme-grid,
   .program-grid,
   .research-grid,
@@ -4590,7 +4662,11 @@ html.reduce-motion .reveal {
   }
 
   .org-card {
-    padding: 18px;
+    padding: 14px;
+  }
+
+  .org-grid {
+    grid-template-columns: 1fr;
   }
 
   .org-stats {
