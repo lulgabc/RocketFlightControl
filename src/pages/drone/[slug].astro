@@ -1,0 +1,269 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { url } from "../../lib/url";
+import { DRONE_TRACKS, type DroneTrack } from "../../data/drone";
+
+export function getStaticPaths() {
+  return DRONE_TRACKS.map((track, index) => ({
+    params: { slug: track.slug },
+    props: {
+      track,
+      prev: DRONE_TRACKS[(index - 1 + DRONE_TRACKS.length) % DRONE_TRACKS.length],
+      next: DRONE_TRACKS[(index + 1) % DRONE_TRACKS.length],
+    },
+  }));
+}
+
+interface Props {
+  track: DroneTrack;
+  prev: DroneTrack;
+  next: DroneTrack;
+}
+
+const { track, prev, next } = Astro.props;
+
+const maturityLabel: Record<string, string> = {
+  production: "已在生产中使用",
+  early: "早期采用",
+  research: "研究 / 原型",
+  watch: "观察",
+};
+---
+
+<BaseLayout
+  title={`${track.title} · 无人机`}
+  description={`${track.summary} 含原理、技术栈、构建步骤、失效模式、开源项目与趋势。`}
+  current="/drone/"
+>
+  <section class:list={["page-hero", "org-hero", `accent-${track.accent}`]}>
+    <div class="container">
+      <div class="page-hero-top">
+        <a href={url("/drone/")}>无人机</a>
+        <span>/</span>
+        <span>{track.en}</span>
+      </div>
+      <span class="eyebrow">{track.index} · {track.en}</span>
+      <h1>{track.title}</h1>
+      <p>{track.summary}</p>
+      <div class="stats-grid org-stats-strip">
+        {track.stats.map((stat) => (
+          <div class="stat">
+            <div class="stat-value">{stat.value}</div>
+            <div class="stat-label">{stat.label}</div>
+            {stat.note && <div class="stat-note">{stat.note}</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <SectionHead
+        eyebrow="Principles"
+        title="先把边界想清楚"
+        lead="无人机的问题很少是“算法不会”，而是坐标、时间、延迟、电源与失效保护没有闭合。"
+      />
+      <div class="equation-grid">
+        {track.principles.map((item) => (
+          <article class="equation-card reveal">
+            <h3>{item.title}</h3>
+            {item.formula && <code class="formula-line">{item.formula}</code>}
+            <p>{item.body}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Stack"
+        title="技术栈与模块"
+        lead="每一层都可以替换，但接口、时间戳与失效语义必须明确。"
+      />
+      <div class="core-grid">
+        {track.stack.map((item) => (
+          <article class="core-card reveal">
+            <h3>{item.layer}</h3>
+            <p>{item.note}</p>
+            <div class="core-metrics">
+              {item.tools.map((tool) => (
+                <span>{tool}</span>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Build"
+        title="从零到飞"
+        lead="每一步都有通过门槛；没有达到门槛，就不要进入下一步。"
+      />
+      <div class="build-grid">
+        {track.build.map((step) => (
+          <article class="build-card reveal">
+            <span class="build-week">{step.step}</span>
+            <h3>{step.title}</h3>
+            <p>{step.detail}</p>
+            <div class="build-gate"><b>通过门槛：</b>{step.gate}</div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Failure modes"
+        title="常见失效与缓解"
+        lead="无人机的“炸机”通常是多个小问题的叠加：电源、振动、射频、时间与软件状态机。"
+      />
+      <div class="matrix-wrap reveal">
+        <table class="matrix failure-table">
+          <thead>
+            <tr>
+              <th scope="col">失效模式</th>
+              <th scope="col">机理 / 触发</th>
+              <th scope="col">缓解 / 验证</th>
+            </tr>
+          </thead>
+          <tbody>
+            {track.failures.map((item) => (
+              <tr>
+                <td>{item.mode}</td>
+                <td>{item.cause}</td>
+                <td>{item.mitigation}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Open source"
+        title="可以动手的开源项目"
+        lead="优先选维护活跃、文档完整、社区可复现的项目；不要只看 star 数。"
+      />
+      <div class="link-grid">
+        {track.projects.map((project) => (
+          <a class="link-card reveal" href={project.href} target="_blank" rel="noopener noreferrer">
+            <span class="link-card-arrow" aria-hidden="true">↗</span>
+            <h3>{project.name}</h3>
+            <p>{project.note} · {project.lang}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Library"
+        title="文档、书与标准"
+        lead="无人机领域版本变化快，优先官方文档；书用来建立模型与直觉，不用来背参数。"
+      />
+      <div class="resource-grid">
+        {track.resources.map((resource) => (
+          <article class="resource-card reveal">
+            <div class="resource-top">
+              <span class="tag accent">{resource.type}</span>
+              <span class="tag">{resource.level}</span>
+            </div>
+            <h2>{resource.title}</h2>
+            <div class="resource-author">{resource.author}</div>
+            <p class="resource-note">{resource.note}</p>
+            {resource.href && (
+              <a class="resource-link" href={resource.href} target="_blank" rel="noopener noreferrer">
+                打开资源 ↗
+              </a>
+            )}
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Radar"
+        title="这条路线的前沿"
+        lead="成熟度按“生产 / 早期 / 研究”标注；不要把原型演示当成可部署能力。"
+      />
+      <div class="trend-grid">
+        {track.trends.map((trend) => (
+          <article class:list={["trend-card", "reveal", `trend-${trend.maturity}`]}>
+            <div class="trend-top">
+              <span class="trend-index">TREND</span>
+              <span class:list={["trend-badge", trend.maturity]}>
+                {maturityLabel[trend.maturity]}
+              </span>
+            </div>
+            <h3>{trend.title}</h3>
+            <p>{trend.detail}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">!</span>
+        <div>
+          <h3>边界与安全</h3>
+          <p>{track.boundaries}</p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="#sources">查看来源</a>
+      </div>
+
+      <div class="learn-block reveal">
+        <h3>对应学习路径</h3>
+        <div class="resource-chips">
+          {track.learn.map((item) => (
+            <a class="resource-chip" href={url(item.href)}>{item.label}</a>
+          ))}
+        </div>
+      </div>
+
+      <div class="source-grid" id="sources">
+        <div class="source-head">
+          <h3>来源</h3>
+          <span class="tag">{track.sources.length} 条</span>
+        </div>
+        <ul>
+          {track.sources.map((source) => (
+            <li><a href={source.href} target="_blank" rel="noopener noreferrer">{source.label} ↗</a></li>
+          ))}
+        </ul>
+      </div>
+
+      <nav class="org-nav" aria-label="无人机页面导航">
+        <a href={url(`/drone/${prev.slug}/`)}>
+          <span>← 上一条</span>
+          <b>{prev.title}</b>
+        </a>
+        <a href={url("/drone/")} class="org-nav-all">全部路线</a>
+        <a href={url(`/drone/${next.slug}/`)}>
+          <span>下一条 →</span>
+          <b>{next.title}</b>
+        </a>
+      </nav>
+    </div>
+  </section>
+</BaseLayout>

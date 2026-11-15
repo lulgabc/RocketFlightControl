@@ -1,0 +1,173 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { url } from "../../lib/url";
+import { DRONE_TRACKS, DRONE_LAYERS, DRONE_TRENDS, DRONE_BUILDS } from "../../data/drone";
+
+const totalProjects = DRONE_TRACKS.reduce((sum, track) => sum + track.projects.length, 0);
+const totalResources = DRONE_TRACKS.reduce((sum, track) => sum + track.resources.length, 0);
+
+const maturityLabel: Record<string, string> = {
+  production: "已在生产中使用",
+  early: "早期采用",
+  research: "研究 / 原型",
+  watch: "观察",
+};
+---
+
+<BaseLayout
+  title="无人机"
+  description="无人机硬核知识与开源实践：PX4/ArduPilot 自主栈、Betaflight/ExpressLRS FPV、Jetson 边缘 AI、Crazyflie 蜂群，以及 Remote ID、空域与安全。"
+  current="/drone/"
+>
+  <section class="page-hero">
+    <div class="container">
+      <div class="page-hero-top">
+        <span class="dot"></span>
+        <span>Drone lab / five tracks</span>
+      </div>
+      <h1>把 GNC 装进<br />250 mm 的机架。</h1>
+      <p>
+        无人机是飞控最可触的试验场：PX4/ArduPilot 的自主栈、Betaflight/ExpressLRS 的 FPV 手感、
+        Jetson 的机载 AI、Crazyflie 的蜂群，以及 Remote ID 与空域安全。五条路线，全部开源、可复现、能飞。
+      </p>
+      <div class="page-hero-meta">
+        <span>路线 <b>{DRONE_TRACKS.length} 条</b></span>
+        <span>开源项目 <b>{totalProjects} 个</b></span>
+        <span>专业资源 <b>{totalResources} 条</b></span>
+        <span>构建路径 <b>{DRONE_BUILDS.length} 条</b></span>
+        <span>快照 <b>2026-11-15</b></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <SectionHead
+        eyebrow="Full stack"
+        title="从机架到云端，六层一起闭合"
+        lead="无人机不是“飞控 + 桨”。每一层都有自己的延迟、功耗、失效模式与接口；任何一层掉链子，飞手看到的都是“炸机”。"
+      />
+      <div class="drone-stack-grid">
+        {DRONE_LAYERS.map((layer) => (
+          <article class="drone-stack-card reveal">
+            <span>{layer.index}</span>
+            <h3>{layer.title}</h3>
+            <p>{layer.detail}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Five tracks"
+        title="五条路线，从手动到蜂群"
+        lead="可以按兴趣切入，但底层依赖一致：估计、控制、通信、电源与安全。每条路线都给出构建步骤、失效模式和开源项目。"
+      />
+      <div class="eng-grid">
+        {DRONE_TRACKS.map((track) => (
+          <a
+            class:list={["eng-card", `accent-${track.accent}`, "reveal"]}
+            href={url(`/drone/${track.slug}/`)}
+          >
+            <div class="eng-card-top">
+              <span class="eng-index">{track.index}</span>
+              <span class="tag">{track.en}</span>
+            </div>
+            <h2>{track.title}</h2>
+            <p>{track.tagline}</p>
+            <div class="eng-card-stats">
+              {track.stats.slice(0, 3).map((stat) => (
+                <div>
+                  <b>{stat.value}</b>
+                  <span>{stat.label}</span>
+                </div>
+              ))}
+            </div>
+            <span class="eng-card-link">进入路线 →</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="2026 radar"
+        title="值得跟踪的六个方向"
+        lead="标注成熟度：已在生产、早期采用、研究原型。不要把演示视频当成可部署系统。"
+      />
+      <div class="trend-grid">
+        {DRONE_TRENDS.map((trend) => (
+          <article class:list={["trend-card", "reveal", `trend-${trend.maturity}`]}>
+            <div class="trend-top">
+              <span class="trend-index">DRONE</span>
+              <span class:list={["trend-badge", trend.maturity]}>
+                {maturityLabel[trend.maturity]}
+              </span>
+            </div>
+            <h3>{trend.title}</h3>
+            <p>{trend.detail}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Build paths"
+        title="五个可交付的构建路径"
+        lead="按周估算，取决于基础与设备。每条路径都应先仿真、再低高度、再真机；不要把“能起飞”当成“能自主”。"
+      />
+      <div class="build-grid">
+        {DRONE_BUILDS.map((build, index) => (
+          <article class="build-card reveal">
+            <span class="build-week">{String(index + 1).padStart(2, "0")} · {build.weeks}</span>
+            <h3>{build.title}</h3>
+            <p>{build.detail}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Quick start"
+        title="先跑起来的六个仓库"
+        lead="不用一次装完整个生态。先选一个飞控/链路/仿真跑通，再逐步加感知与多机。"
+      />
+      <div class="link-grid">
+        <a class="link-card reveal" href="https://github.com/PX4/PX4-Autopilot" target="_blank" rel="noopener noreferrer"><span class="link-card-arrow" aria-hidden="true">↗</span><h3>PX4</h3><p>自主飞控与 SITL。</p></a>
+        <a class="link-card reveal" href="https://github.com/ArduPilot/ardupilot" target="_blank" rel="noopener noreferrer"><span class="link-card-arrow" aria-hidden="true">↗</span><h3>ArduPilot</h3><p>多机型与任务生态。</p></a>
+        <a class="link-card reveal" href="https://github.com/betaflight/betaflight" target="_blank" rel="noopener noreferrer"><span class="link-card-arrow" aria-hidden="true">↗</span><h3>Betaflight</h3><p>FPV 飞控与调参。</p></a>
+        <a class="link-card reveal" href="https://github.com/ExpressLRS/ExpressLRS" target="_blank" rel="noopener noreferrer"><span class="link-card-arrow" aria-hidden="true">↗</span><h3>ExpressLRS</h3><p>开源低延迟 RC 链路。</p></a>
+        <a class="link-card reveal" href="https://github.com/IMRCLab/crazyswarm2" target="_blank" rel="noopener noreferrer"><span class="link-card-arrow" aria-hidden="true">↗</span><h3>Crazyswarm2</h3><p>ROS 2 蜂群框架。</p></a>
+        <a class="link-card reveal" href="https://github.com/NVIDIA-ISAAC-ROS" target="_blank" rel="noopener noreferrer"><span class="link-card-arrow" aria-hidden="true">↗</span><h3>Isaac ROS</h3><p>机载 GPU 感知。</p></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">!</span>
+        <div>
+          <h3>先合规，再起飞</h3>
+          <p>
+            无人机涉及空域、频谱、隐私与人身安全。Remote ID、地理围栏、失效保护、BVLOS 许可与反制法律因地区而异；
+            任何真实飞行都必须先确认当地法规、场地与保险。反无人机只做防御与合规，不提供干扰/攻击指导。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href={url("/drone/safety/")}>安全与空域</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

@@ -9,6 +9,7 @@ import { PROJECTS } from "../data/projects";
 import { RESOURCES } from "../data/resources";
 import { INDUSTRY_ORGS } from "../data/industry";
 import { ENGINEERING_TOPICS } from "../data/engineering";
+import { DRONE_TRACKS } from "../data/drone";
 
 const featuredProjects = ["6dof", "mcu-fc", "sounding"]
   .map((id) => PROJECTS.find((project) => project.id === id))
@@ -329,6 +330,31 @@ const projectCount = PROJECTS.length;
             <span class="eng-mini-index">{topic.index}</span>
             <h3>{topic.title}</h3>
             <p>{topic.tagline}</p>
+            <span class="eng-mini-link">打开 →</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Drone lab"
+        title="无人机：从 5 寸 FPV 到自主蜂群"
+        lead="PX4/ArduPilot、Betaflight/ExpressLRS、Jetson 边缘 AI、Crazyflie 蜂群与空域安全。五条路线，开源项目、构建步骤、失效模式与 2026 趋势。"
+        linkHref={url("/drone/")}
+        linkLabel="进入无人机版块"
+      />
+      <div class="eng-mini-grid">
+        {DRONE_TRACKS.map((track) => (
+          <a
+            class:list={["eng-mini", `accent-${track.accent}`, "reveal"]}
+            href={url(`/drone/${track.slug}/`)}
+          >
+            <span class="eng-mini-index">{track.index}</span>
+            <h3>{track.title}</h3>
+            <p>{track.tagline}</p>
             <span class="eng-mini-link">打开 →</span>
           </a>
         ))}

@@ -34,7 +34,8 @@ const isCurrent = (href: string) =>
           href={url(item.href)}
           aria-current={isCurrent(item.href) ? "page" : undefined}
         >
-          {item.label}
+          <span class="nav-label-full">{item.label}</span>
+          <span class="nav-label-short">{item.short}</span>
         </a>
       ))}
     </nav>

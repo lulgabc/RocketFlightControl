@@ -350,6 +350,20 @@ code {
   height: 17px;
 }
 
+.nav-label-short {
+  display: none;
+}
+
+@media (min-width: 1001px) and (max-width: 1150px) {
+  .nav-label-full {
+    display: none;
+  }
+
+  .nav-label-short {
+    display: inline;
+  }
+}
+
 .theme-toggle .moon {
   display: none;
 }
@@ -4542,6 +4556,88 @@ html.reduce-motion .reveal {
   font-weight: 560;
 }
 
+/* ---------- Drone lab ---------- */
+
+.drone-stack-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.drone-stack-card {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+}
+
+.drone-stack-card > span {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+
+.drone-stack-card h3 {
+  margin: 6px 0 5px;
+  font-size: 0.9rem;
+}
+
+.drone-stack-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.65;
+}
+
+.build-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.build-card {
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+}
+
+.build-week {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.build-card h3 {
+  margin: 6px 0 5px;
+  font-size: 0.9rem;
+}
+
+.build-card > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.65;
+}
+
+.build-gate {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+  color: var(--faint);
+  font-size: 0.68rem;
+  line-height: 1.55;
+}
+
+.build-gate b {
+  color: var(--teal);
+  font-weight: 500;
+}
+
 /* ---------- Responsive ---------- */
 
 @media (max-width: 1080px) {
@@ -5091,6 +5187,10 @@ html.reduce-motion .reveal {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .drone-stack-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .review-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -5104,12 +5204,17 @@ html.reduce-motion .reveal {
   .equation-grid {
     grid-template-columns: 1fr;
   }
+
+  .build-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
   .eng-grid,
   .review-grid,
-  .core-grid {
+  .core-grid,
+  .drone-stack-grid {
     grid-template-columns: 1fr;
   }
 
