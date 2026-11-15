@@ -7,6 +7,7 @@ import { PHASES, TOTAL_CHECKPOINTS } from "../data/roadmap";
 import { DOMAINS } from "../data/fundamentals";
 import { PROJECTS } from "../data/projects";
 import { RESOURCES } from "../data/resources";
+import { INDUSTRY_ORGS } from "../data/industry";
 
 const featuredProjects = ["6dof", "mcu-fc", "sounding"]
   .map((id) => PROJECTS.find((project) => project.id === id))
@@ -280,6 +281,31 @@ const projectCount = PROJECTS.length;
           <p>Starlink 回传、PREEMPT_RT 主线、Rust 认证、RISC-V 与 Safe AI 的真实边界。</p>
           <span class="tag">16 条核查</span>
         </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Industry frontier"
+        title="七家机构，七种把火箭做成工业的方式"
+        lead="SpaceX 的复用、Blue Origin 的 BE-4、Rocket Lab 的端到端、Lockheed / Boeing 的防务与载人、NASA 的 Artemis、ESA 的自主进入空间。每个机构一页，标注 2026 状态与公开信息边界。"
+        linkHref={url("/industry/")}
+        linkLabel="进入工业前沿"
+      />
+      <div class="org-mini-grid">
+        {INDUSTRY_ORGS.map((org) => (
+          <a
+            class:list={["org-mini", `accent-${org.accent}`, "reveal"]}
+            href={url(`/industry/${org.slug}/`)}
+          >
+            <span class="org-mini-kind">{org.kind} · {org.country}</span>
+            <h3>{org.name}</h3>
+            <p>{org.tagline}</p>
+            <span class="org-mini-signal">{org.compare.signature}</span>
+          </a>
+        ))}
       </div>
     </div>
   </section>

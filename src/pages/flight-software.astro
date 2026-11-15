@@ -185,7 +185,7 @@ const verdictCounts = FACTS.reduce<Record<string, number>>((acc, fact) => {
             </div>
             <div class="module-grid">
               {track.modules.map((module) => (
-                <article class="module-card reveal">
+                <article class="module-card reveal" id={module.id}>
                   <div class="module-top">
                     <span class="module-code">{module.code}</span>
                     <span class="tag">{module.en}</span>

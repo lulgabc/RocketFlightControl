@@ -1,0 +1,197 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { url } from "../../lib/url";
+import { INDUSTRY_ORGS, INDUSTRY_TIMELINE, INDUSTRY_THEMES } from "../../data/industry";
+
+const commercial = INDUSTRY_ORGS.filter((org) => org.kind === "商业公司").length;
+const agencies = INDUSTRY_ORGS.length - commercial;
+const sourceCount = INDUSTRY_ORGS.reduce((sum, org) => sum + org.sources.length, 0);
+---
+
+<BaseLayout
+  title="工业前沿"
+  description="2026 年太空与火箭工业前沿：SpaceX、Blue Origin、Rocket Lab、Lockheed Martin、Boeing、NASA、ESA 的公开项目、技术栈、主要研究与最新状态，逐条标注公开信息边界。"
+  current="/industry/"
+>
+  <section class="page-hero industry-hero">
+    <div class="container">
+      <div class="page-hero-top">
+        <span class="dot"></span>
+        <span>Industry frontier / 2026 snapshot</span>
+      </div>
+      <h1>谁在把火箭，<br />变成一门工业。</h1>
+      <p>
+        七家机构，七种工程路径。这里不做“谁更强”的排行榜，而是把公开可核实的项目、技术栈、
+        研究重点与 2026 年最新状态放在一起——并明确哪些信息是官方披露，哪些仍然不公开。
+      </p>
+      <div class="page-hero-meta">
+        <span>机构 <b>{INDUSTRY_ORGS.length} 家</b></span>
+        <span>商业 / 政府 <b>{commercial} / {agencies}</b></span>
+        <span>时间线 <b>{INDUSTRY_TIMELINE.length} 个节点</b></span>
+        <span>来源 <b>{sourceCount}+ 条</b></span>
+        <span>快照日期 <b>2026-11-15</b></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">i</span>
+        <div>
+          <h3>先读边界：公开资料不是内部图纸</h3>
+          <p>
+            上市公司的投资者材料、政府任务页、NASA OIG 报告与官方新闻稿是可核实的主干；
+            飞控源码、控制器参数、国防载荷细节与供应链良率通常不公开。本页不把“招聘信息里的技术词”
+            当成已部署能力，也不把论文原型当成在轨系统。所有日期以 2026-11-15 为准，后续会变。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href={url("/about/#safety")}>阅读安全边界</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="2026 timeline"
+        title="这一年，行业被这些事件改写"
+        lead="从 Artemis II 到 Starship 首次飞船回收，从 New Glenn 爆炸到 Neutron 延期——2026 年的关键节点同时来自成功、失败与认证。"
+      />
+      <ol class="industry-timeline reveal">
+        {INDUSTRY_TIMELINE.map((item) => (
+          <li>
+            <time>{item.date}</time>
+            <div class="timeline-body">
+              <span class="timeline-org">{item.org}</span>
+              <h3>{item.title}</h3>
+              <p>{item.detail}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Seven organizations"
+        title="七家机构，七张工程名片"
+        lead="每张卡片只放最能代表其 2026 状态的三件事。点进子页面看完整项目、技术栈、研究重点与来源。"
+      />
+      <div class="org-grid">
+        {INDUSTRY_ORGS.map((org) => (
+          <a
+            class:list={["org-card", `accent-${org.accent}`, "reveal"]}
+            href={url(`/industry/${org.slug}/`)}
+          >
+            <div class="org-card-top">
+              <div>
+                <span class="org-kind">{org.kind} · {org.country}</span>
+                <h2>{org.name}</h2>
+                <div class="org-zh">{org.nameZh}</div>
+              </div>
+              <span class="org-arrow" aria-hidden="true">→</span>
+            </div>
+            <p class="org-tagline">{org.tagline}</p>
+            <div class="org-focus">
+              {org.focus.slice(0, 3).map((item) => (
+                <span>{item}</span>
+              ))}
+            </div>
+            <div class="org-stats">
+              {org.stats.slice(0, 3).map((stat) => (
+                <div>
+                  <b>{stat.value}</b>
+                  <span>{stat.label}</span>
+                </div>
+              ))}
+            </div>
+            <div class="org-card-foot">
+              <span>{org.compare.signature}</span>
+              <span>{org.founded} 成立</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Comparison"
+        title="把七家放在同一张表里"
+        lead="注意：这不是能力排名。政府机构与商业公司的目标函数不同；同一列里的“运载”也可能只是参与方式不同。"
+      />
+      <div class="matrix-wrap reveal">
+        <table class="matrix industry-table">
+          <thead>
+            <tr>
+              <th scope="col">机构</th>
+              <th scope="col">运载 / 平台</th>
+              <th scope="col">载人与深空</th>
+              <th scope="col">2026 标志</th>
+              <th scope="col">公开度</th>
+            </tr>
+          </thead>
+          <tbody>
+            {INDUSTRY_ORGS.map((org) => (
+              <tr>
+                <td>
+                  <a href={url(`/industry/${org.slug}/`)}>{org.name}</a>
+                  <span class="table-sub">{org.kind}</span>
+                </td>
+                <td>{org.compare.launch}</td>
+                <td>{org.compare.human}</td>
+                <td>{org.compare.signature}</td>
+                <td>{org.compare.openness}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="scope-note">
+        范围说明：本页聚焦指定的 7 家机构。ULA、Northrop Grumman、Firefly、Arianespace、Isar 等只在相关项目中提及，
+        未单独设页；这不是对其它公司的能力判断。
+      </p>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Structural themes"
+        title="六个结构性主题"
+        lead="单个事件会过时，结构变化不会。下面六条是 2026 年最值得持续跟踪的方向。"
+      />
+      <div class="theme-grid">
+        {INDUSTRY_THEMES.map((theme) => (
+          <article class="theme-card reveal">
+            <span class="theme-index">{theme.index}</span>
+            <h3>{theme.title}</h3>
+            <p>{theme.body}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">→</span>
+        <div>
+          <h3>从“知道他们做了什么”到“自己能做什么”</h3>
+          <p>
+            产业页回答“谁在做什么”；路线图与 C/C++ 工程专线回答“你该练什么”。
+            建议先完成六自由度、EKF 与 HIL，再对照这些机构的公开项目做拆解。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href={url("/flight-software/")}>进入工程专线</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

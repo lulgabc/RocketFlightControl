@@ -3,7 +3,7 @@ export const SITE = {
   titleZh: "火箭飞控手册",
   tagline: "Guidance · Navigation · Control",
   description:
-    "一份写给工程师与自学者的中文火箭飞控学习路线图：从数值仿真、六自由度建模、控制与状态估计，到嵌入式飞控、半实物测试与飞行验证；并附 C/C++ 飞控与通信工程专线、2026 技术趋势与事实核查。",
+    "一份写给工程师与自学者的中文火箭飞控学习路线图：从数值仿真、六自由度建模、控制与状态估计，到嵌入式飞控、半实物测试与飞行验证；并附 C/C++ 飞控与通信工程专线、2026 工业前沿与事实核查。",
   url: "https://lulgabc.github.io",
   base: "/RocketFlightControl",
   repo: "https://github.com/lulgabc/RocketFlightControl",
@@ -13,9 +13,9 @@ export const SITE = {
     { href: "/fundamentals/", label: "知识地图", short: "知识" },
     { href: "/projects/", label: "项目阶梯", short: "项目" },
     { href: "/flight-software/", label: "C/C++ 工程", short: "工程" },
+    { href: "/industry/", label: "工业前沿", short: "工业" },
     { href: "/resources/", label: "资源库", short: "资源" },
     { href: "/toolkit/", label: "工具箱", short: "工具" },
-    { href: "/about/", label: "关于", short: "关于" },
   ],
 };
 

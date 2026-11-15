@@ -1,0 +1,255 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import { url } from "../../lib/url";
+import { INDUSTRY_ORGS, type IndustryOrg } from "../../data/industry";
+
+export function getStaticPaths() {
+  return INDUSTRY_ORGS.map((org, index) => ({
+    params: { slug: org.slug },
+    props: {
+      org,
+      prev: INDUSTRY_ORGS[(index - 1 + INDUSTRY_ORGS.length) % INDUSTRY_ORGS.length],
+      next: INDUSTRY_ORGS[(index + 1) % INDUSTRY_ORGS.length],
+    },
+  }));
+}
+
+interface Props {
+  org: IndustryOrg;
+  prev: IndustryOrg;
+  next: IndustryOrg;
+}
+
+const { org, prev, next } = Astro.props;
+---
+
+<BaseLayout
+  title={`${org.name} · 工业前沿`}
+  description={`${org.name}（${org.nameZh}）的公开项目、技术栈、主要研究与 2026 年最新状态：${org.summary}`}
+  current="/industry/"
+>
+  <section class:list={["page-hero", "org-hero", `accent-${org.accent}`]}>
+    <div class="container">
+      <div class="page-hero-top">
+        <a href={url("/industry/")}>工业前沿</a>
+        <span>/</span>
+        <span>{org.short}</span>
+      </div>
+      <div class="org-hero-grid">
+        <div>
+          <span class="eyebrow">{org.kind} · {org.country} · {org.founded}</span>
+          <h1>{org.name}</h1>
+          <div class="org-hero-zh">{org.nameZh}</div>
+          <p>{org.summary}</p>
+          <div class="org-focus">
+            {org.focus.map((item) => (
+              <span>{item}</span>
+            ))}
+          </div>
+        </div>
+        <dl class="org-facts">
+          <div>
+            <dt>总部</dt>
+            <dd>{org.hq}</dd>
+          </div>
+          <div>
+            <dt>类型</dt>
+            <dd>{org.kind}</dd>
+          </div>
+          <div>
+            <dt>成立</dt>
+            <dd>{org.founded}</dd>
+          </div>
+          <div>
+            <dt>快照</dt>
+            <dd>2026-11-15</dd>
+          </div>
+        </dl>
+      </div>
+      <div class="stats-grid org-stats-strip">
+        {org.stats.map((stat) => (
+          <div class="stat">
+            <div class="stat-value">{stat.value}</div>
+            <div class="stat-label">{stat.label}</div>
+            {stat.note && <div class="stat-note">{stat.note}</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <SectionHead
+        eyebrow="2026 snapshot"
+        title="最新状态：按时间排"
+        lead="只记录会改变判断的节点。型号日期与任务状态以官方页面为主，媒体报道只用于补充解释。"
+      />
+      <ol class="snapshot-list">
+        {org.snapshot.map((item) => (
+          <li class="reveal">
+            <time>{item.date}</time>
+            <div>
+              <h3>{item.title}</h3>
+              <p>{item.detail}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Programs"
+        title="主要项目与平台"
+        lead="状态是“截至 2026-11-15 的公开状态”，不是永久标签。开发中 / 认证中 / 暂停都可能在数月内改变。"
+      />
+      <div class="program-grid">
+        {org.programs.map((program) => (
+          <article class="program-card reveal">
+            <div class="program-top">
+              <h3>{program.name}</h3>
+              <span class="tag">{program.status}</span>
+            </div>
+            <p>{program.note}</p>
+            {program.href && (
+              <a
+                class="program-link"
+                href={program.href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                官方 / 来源 ↗
+              </a>
+            )}
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Engineering stack"
+        title="技术栈与工程特征"
+        lead="“证据”列说明这条信息的来源强度。未公开的软件与航电细节不会被写成确定事实。"
+      />
+      <div class="matrix-wrap reveal">
+        <table class="matrix tech-table">
+          <thead>
+            <tr>
+              <th scope="col">领域</th>
+              <th scope="col">公开可核实的技术 / 工程特征</th>
+              <th scope="col">证据</th>
+            </tr>
+          </thead>
+          <tbody>
+            {org.stack.map((item) => (
+              <tr>
+                <td>{item.area}</td>
+                <td>{item.detail}</td>
+                <td><span class="evidence-tag">{item.evidence}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Research"
+        title="主要研究方向"
+        lead="这里区分“已经在任务中使用”与“仍在开发 / 研究”。前者写成项目，后者写在这里。"
+      />
+      <div class="research-grid">
+        {org.research.map((item) => (
+          <article class="research-card reveal">
+            <h3>{item.title}</h3>
+            <p>{item.detail}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Public access"
+        title="公开项目与资料入口"
+        lead="优先官方页面、开源仓库与政府报告。第三方报道只在官方信息不足时使用。"
+      />
+      <div class="link-grid">
+        {org.openProjects.map((item) => (
+          <a
+            class="link-card reveal"
+            href={item.href}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span class="link-card-arrow" aria-hidden="true">↗</span>
+            <h3>{item.name}</h3>
+            <p>{item.note}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">!</span>
+        <div>
+          <h3>公开信息边界</h3>
+          <p>{org.boundaries}</p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="#sources">查看来源</a>
+      </div>
+
+      <div class="learn-block reveal">
+        <h3>对应学习路径</h3>
+        <div class="resource-chips">
+          {org.learn.map((item) => (
+            <a class="resource-chip" href={url(item.href)}>{item.label}</a>
+          ))}
+        </div>
+      </div>
+
+      <div class="source-grid" id="sources">
+        <div class="source-head">
+          <h3>来源</h3>
+          <span class="tag">{org.sources.length} 条</span>
+        </div>
+        <ul>
+          {org.sources.map((source) => (
+            <li>
+              <a href={source.href} target="_blank" rel="noopener noreferrer">
+                {source.label} ↗
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <nav class="org-nav" aria-label="机构页面导航">
+        <a href={url(`/industry/${prev.slug}/`)}>
+          <span>← 上一家</span>
+          <b>{prev.name}</b>
+        </a>
+        <a href={url("/industry/")} class="org-nav-all">全部机构</a>
+        <a href={url(`/industry/${next.slug}/`)}>
+          <span>下一家 →</span>
+          <b>{next.name}</b>
+        </a>
+      </nav>
+    </div>
+  </section>
+</BaseLayout>
