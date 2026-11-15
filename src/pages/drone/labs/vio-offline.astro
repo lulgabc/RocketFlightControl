@@ -431,6 +431,95 @@ python3 vio_eval.py --est ~/vins_results/v1_01/vio.csv \
           </tbody>
         </table>
       </div>
+      <SectionHead
+        eyebrow="Bench test"
+        title="地面静态实测：EKF2 真的在跟 VIO 走吗？"
+        lead="不要只看“飞机没掉”。给 VIO 位置加一个已知的慢斜坡，看 PX4 的 local position 是否跟着走。"
+      />
+      <div class="lab-steps">
+        <article class="lab-step reveal">
+          <span>01</span>
+          <div>
+            <h3>启动 PX4 SITL</h3>
+            <pre class="code-block"><code>cd ~/px4
+make px4_sitl gz_x500</code></pre>
+            <p>保持进程前台运行。后台跑时用 <code>tail -f /dev/null | make ...</code> 顶住 stdin，否则 PX4 shell 读到 EOF 会退出。</p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>02</span>
+          <div>
+            <h3>打开 EV 并关闭 GPS 融合</h3>
+            <pre class="code-block"><code>python3 px4_ev_check.py \
+  --address udpin://0.0.0.0:14550 --set-params --duration 5</code></pre>
+            <p>MAVSDK 走 PX4 的 GCS 实例（14550）；ODOMETRY 走 onboard 实例（14580）。两个端口别搞混。</p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>03</span>
+          <div>
+            <h3>回放 VIO，注入 1 m 北向斜坡</h3>
+            <pre class="code-block"><code>python3 vio_to_mavlink.py \
+  --est ~/ov_results/v1_01/state_estimate.txt \
+  --address udpout:127.0.0.1:14580 \
+  --mode static --ramp-after 10 \
+  --ramp-north 1.0 --ramp-time 5 --duration 35</code></pre>
+            <p>0–10 s 保持 OpenVINS 第一帧；10–15 s 线性加 1 m North。斜坡是测试信号，用来证明 EKF2 在消费外部视觉，而不是碰巧静止。</p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>04</span>
+          <div>
+            <h3>同时看 PX4 的位置与健康</h3>
+            <pre class="code-block"><code>python3 px4_ev_check.py \
+  --address udpin://0.0.0.0:14550 --duration 40</code></pre>
+            <p>重点看 <code>POS N</code> 是否从 0 跟到 1，以及 <code>armable</code> 是否从 False 变 True。</p>
+          </div>
+        </article>
+      </div>
+
+      <div class="matrix-wrap reveal" style="margin-top: 22px;">
+        <table class="matrix">
+          <thead><tr><th scope="col">参数</th><th scope="col">值</th><th scope="col">作用</th></tr></thead>
+          <tbody>
+            <tr><td>EKF2_EV_CTRL</td><td>7</td><td>水平位置 + 垂直位置 + 三维速度；不融合 yaw</td></tr>
+            <tr><td>EKF2_HGT_REF</td><td>3</td><td>高度参考使用 Vision</td></tr>
+            <tr><td>EKF2_GPS_CTRL</td><td>0</td><td>关闭 GPS 融合，逼 EKF2 使用 EV</td></tr>
+            <tr><td>EKF2_EV_DELAY</td><td>0</td><td>台架测试无图像链路延迟</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout reveal" style="margin-top: 22px;">
+        <span class="callout-icon" aria-hidden="true">✓</span>
+        <div>
+          <h3>实测记录 · PX4 v1.17 SITL · 2026-11-15</h3>
+          <p>
+            环境：PX4 release/1.17 + Gazebo Harmonic，机型 <code>gz_x500</code>，4 vCPU。
+            注入前 <code>local=True / global=False / armable=False</code>；注入 20 Hz ODOMETRY 后，
+            PX4 local position 的 N 从 0 跟到 <b>1.001 m</b>，E 在斜坡后回到 0.00，D 在 0.23–0.26 m 之间缓慢变化，
+            <code>armable</code> 变为 <b>True</b>。
+          </p>
+          <p>
+            这不是“飞机飞了 1 m”，而是 EKF2 接受了外部视觉并跟随了已知测试信号。
+            仍在地面、未解锁、未起飞；坐标系 yaw、延迟、协方差和失效检测都还没做飞行级验证。
+          </p>
+        </div>
+      </div>
+
+      <div class="callout callout-compact reveal">
+        <span class="callout-icon" aria-hidden="true">!</span>
+        <div>
+          <h3>四个容易踩的坑</h3>
+          <p>
+            1) PX4 SITL 绑定 14580，14540/14550 是它的远端目标；ODOMETRY 要发到 14580。
+            2) ODOMETRY 是 MAVLink 2，pymavlink 默认 v1.0，必须先设 <code>MAVLINK20=1</code>。
+            3) 本测试用 identity 四元数且 <code>EKF2_EV_CTRL=7</code> 不融合 yaw；真实飞行必须处理 body/FRD 与 yaw 对齐。
+            4) VIO 世界系 yaw 是任意的，ENU→NED 只是台架简化；不要拿这个结果当“坐标系已经对了”。
+          </p>
+        </div>
+      </div>
+
       <div class="callout reveal">
         <span class="callout-icon" aria-hidden="true">→</span>
         <div>
@@ -475,7 +564,9 @@ python3 vio_eval.py --est ~/vins_results/v1_01/vio.csv \
             下载：<a href={url("/labs/euroc_to_ros2.py")}>euroc_to_ros2.py</a>、
             <a href={url("/labs/vio_eval.py")}>vio_eval.py</a>、
             <a href={url("/labs/run_openvins_euroc.sh")}>run_openvins_euroc.sh</a>、
-            <a href={url("/labs/run_vins_euroc.sh")}>run_vins_euroc.sh</a>。
+            <a href={url("/labs/run_vins_euroc.sh")}>run_vins_euroc.sh</a>、
+            <a href={url("/labs/vio_to_mavlink.py")}>vio_to_mavlink.py</a>、
+            <a href={url("/labs/px4_ev_check.py")}>px4_ev_check.py</a>。
             所有实验仅用于离线数据集与 SITL；真机 VIO 必须先做标定、时间同步与失效检测。
           </p>
         </div>
