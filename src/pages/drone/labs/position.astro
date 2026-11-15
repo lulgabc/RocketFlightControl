@@ -7,7 +7,7 @@ import code from "../../../labs/offboard_position.py?raw";
 const failures = [
   { mode: "风里位置误差大", cause: "位置环带宽不足、倾角限制、风估计缺失。", mitigation: "记录平均/最大误差与倾角；先降速，再调位置环；不要用积分硬顶。" },
   { mode: "方形过冲/振荡", cause: "位置设定点阶跃、速度/加速度限制、控制延迟。", mitigation: "加加减速限制、分段时间、降低 side；看日志中的 setpoint 与实际。" },
-  { mode: "丢 setpoint 后不降落", cause: "COM_OBL_RC_ACT 默认是 Position mode，不是 Land。", mitigation: "用 param show 确认；测试时显式设 4=Land，并观察模式切换。" },
+  { mode: "丢 setpoint 后不降落", cause: "COM_OBL_RC_ACT 默认 0=Position；实测可能先进入 RTL（其他 failsafe 层级），不是 Land。", mitigation: "用 param show 与日志确认；测试 Land 时显式设 4，并观察模式切换。" },
   { mode: "Offboard 直接退出", cause: "setpoint 流中断、超时参数过小、脚本异常。", mitigation: "看 COM_OF_LOSS_T；保持 setpoint ≥ 2 Hz；日志对齐脚本时间。" },
   { mode: "起飞点漂移", cause: "风、EKF 收敛、home 设置。", mitigation: "等 health；记录 home；在无风世界先复现。" },
   { mode: "降落点偏离", cause: "风、位置控制停止时机、下降过程漂移。", mitigation: "先回 home 再停 Offboard；留足降落时间；看 local position。" },
@@ -52,7 +52,7 @@ const failures = [
       <div class="core-grid">
         <article class="core-card reveal"><h3>位置而不是速度</h3><p>发送 N/E/D 位置，PX4 内部的位置环负责速度与姿态；你不再直接决定每个瞬间的速度。</p><div class="core-metrics"><span>NED</span><span>PositionNedYaw</span><span>位置环</span></div></article>
         <article class="core-card reveal"><h3>风是持续扰动</h3><p>windy 世界给持续风；位置误差、倾角与积分作用会同时出现。先记录，再调参，不要凭感觉。</p><div class="core-metrics"><span>windy</span><span>稳态误差</span><span>倾角</span></div></article>
-        <article class="core-card reveal"><h3>主动制造失效</h3><p>停止 setpoint 流，观察 PX4 在 COM_OF_LOSS_T 后执行 COM_OBL_RC_ACT。默认是 Position，不是 Land。</p><div class="core-metrics"><span>drop</span><span>failsafe</span><span>mode</span></div></article>
+        <article class="core-card reveal"><h3>主动制造失效</h3><p>停止 setpoint 流，观察 PX4 在 COM_OF_LOSS_T 后执行 COM_OBL_RC_ACT。参数默认 0=Position，但实测可能先触发 RTL；以日志与版本为准。</p><div class="core-metrics"><span>drop</span><span>failsafe</span><span>mode</span></div></article>
       </div>
     </div>
   </section>
@@ -140,6 +140,19 @@ param set COM_OF_LOSS_T 1.0</code></pre>
           <p>
             真机上不要用“拔线/关地面站”作为第一次 failsafe 测试。先在 SITL 里把模式切换、超时、降落/返航行为看清楚，
             再在拆桨/系留状态做硬件验证。
+          </p>
+        </div>
+      </div>
+
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">✓</span>
+        <div>
+          <h3>实测记录 · 2026-11-15</h3>
+          <p>
+            环境：Ubuntu 24.04 QEMU VM、PX4 release/1.17、Gazebo Harmonic 8.15、MAVSDK-grpc 4.2.0。
+            <code>--drop-after 4</code> 后，PX4 在约 5.3 m 高度切换到 <code>RETURN_TO_LAUNCH</code>，
+            随后自动降落并 disarm；<code>COM_OF_LOSS_T=1.0</code>、<code>COM_OBL_RC_ACT=0</code>。
+            结论：丢流链路有效，但实际动作受 failsafe 层级影响，不能只看单个参数。
           </p>
         </div>
       </div>

@@ -83,7 +83,7 @@ const failures = [
 param set EKF2_HGT_REF 3
 param set EKF2_EV_DELAY 0
 param save</code></pre>
-            <p>7 = 水平位置 + 垂直位置 + 三维速度；3 = Vision 高度参考。保存后重启 SITL，让 HGT_REF 生效。</p>
+            <p>7 = 水平位置 + 垂直位置 + 三维速度；3 = Vision 高度参考。部分参数需要重启 EKF/SITL 才生效；若高度源没变，重启后再测。</p>
           </div>
         </article>
         <article class="lab-step reveal">
@@ -164,6 +164,20 @@ param save</code></pre>
           <p>
             在悬停中停止 Gazebo 或禁用 EV（取决于你的版本），观察 EKF 高度/位置与 failsafe。
             SITL 里做够，再考虑真机；真实 VIO 失效往往比 GPS 丢失更隐蔽。
+          </p>
+        </div>
+      </div>
+
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">✓</span>
+        <div>
+          <h3>实测记录 · 2026-11-15</h3>
+          <p>
+            环境：Ubuntu 24.04 QEMU VM、PX4 release/1.17、Gazebo Harmonic 8.15、MAVSDK-grpc 4.2.0，
+            机型 <code>gz_x500_vision</code>。设置 <code>EKF2_EV_CTRL=7</code>、<code>EKF2_HGT_REF=3</code>、
+            <code>EKF2_GPS_CTRL=0</code>、<code>EKF2_EV_DELAY=0</code> 后重启 SITL，
+            <code>vio_hover.py --altitude 2 --move 1 --hold 5</code> 完成起飞、1 m 平移、回中与降落；
+            结束模式 <code>HOLD</code>，已 disarm。GPS 融合关闭时仍能解锁，说明位置与高度确实来自视觉/仿真真值。
           </p>
         </div>
       </div>

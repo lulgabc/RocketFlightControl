@@ -20,8 +20,12 @@ import argparse
 import asyncio
 import contextlib
 
-from mavsdk import System
-from mavsdk.offboard import OffboardError, VelocityNedYaw
+try:
+    from mavsdk import System
+    from mavsdk.offboard import OffboardError, VelocityNedYaw
+except Exception:  # MAVSDK >= 4 uses the native binding under 'mavsdk'
+    from mavsdk_grpc import System
+    from mavsdk_grpc.offboard import OffboardError, VelocityNedYaw
 
 
 async def wait_connected(drone: System, timeout: float) -> None:

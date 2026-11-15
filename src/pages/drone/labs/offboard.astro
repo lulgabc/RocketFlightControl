@@ -124,8 +124,8 @@ bash ./Tools/setup/ubuntu.sh</code></pre>
             <h3>安装 MAVSDK</h3>
             <pre class="code-block"><code>python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install --upgrade pip mavsdk</code></pre>
-            <p>建议 Python 3.10+。不要把 MAVSDK 装进系统 Python 或另一个虚拟环境。</p>
+python -m pip install --upgrade pip mavsdk-grpc</code></pre>
+            <p>建议 Python 3.10+。MAVSDK ≥4 的 native binding API 不同；本 Lab 使用 <code>mavsdk-grpc</code> 兼容层，脚本也兼容 <code>mavsdk&lt;4</code>。</p>
           </div>
         </article>
         <article class="lab-step reveal">
