@@ -1,0 +1,234 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import SectionHead from "../../../components/SectionHead.astro";
+import { url } from "../../../lib/url";
+import code from "../../../labs/vio_hover.py?raw";
+
+const failures = [
+  { mode: "EKF 不使用视觉", cause: "EKF2_EV_CTRL=0 或未重启；视觉消息未到达。", mitigation: "设 7 并重启；listener vehicle_odometry；看 QGC estimator 状态。" },
+  { mode: "高度源仍是气压/GPS", cause: "EKF2_HGT_REF 未设为 Vision，或未重启。", mitigation: "param set EKF2_HGT_REF 3；save；重启 SITL；再检查。" },
+  { mode: "位置跳变/漂移", cause: "视觉延迟、外参错误、坐标系不一致、仿真 odometry 噪声。", mitigation: "先零延迟/零外参；再逐项加延迟与外参；记录 innovation。" },
+  { mode: "起飞/解锁被拒", cause: "local position/home 未就绪；GPS 被禁用但 home 未建立。", mitigation: "等 health；先带 GPS 跑通，再做 GPS-denied；不要绕过检查。" },
+  { mode: "GPS 与视觉冲突", cause: "两者位置/高度不一致，EKF 来回拉。", mitigation: "先只用一种水平源；检查 EKF2_GPS_CTRL；看 innovation 与模式。" },
+  { mode: "Offboard 位置不动", cause: "setpoint 未持续、模式未进入、位置环限幅。", mitigation: "保持 ≥2 Hz；看 mode；确认 PositionNedYaw 的 down 为负。" },
+];
+---
+
+<BaseLayout
+  title="Lab 02 · VIO 悬停与外部视觉"
+  description="PX4 SITL gz_x500_vision 外部视觉实验：EKF2 EV 参数、视觉数据检查、位置悬停、GPS-denied 测试与真实 VIO 路径。"
+  current="/drone/"
+>
+  <section class="page-hero">
+    <div class="container">
+      <div class="page-hero-top">
+        <a href={url("/drone/labs/")}>无人机实验室</a>
+        <span>/</span>
+        <span>Lab 02</span>
+      </div>
+      <span class="eyebrow">Lab 02 · External Vision</span>
+      <h1>让 PX4 用视觉，<br />而不是 GPS 悬停。</h1>
+      <p>
+        本 Lab 先用 Gazebo 的 <code>gz_x500_vision</code> 注入外部视觉里程计，验证 PX4 EKF2 的视觉融合、高度源与位置悬停；
+        再讨论如何把真实 VINS/OpenVINS 的输出接进来。关键是先证明“EKF 真的在用视觉”，而不是“飞机碰巧没掉”。
+      </p>
+      <div class="page-hero-meta">
+        <span>预计 <b>60–90 分钟</b></span>
+        <span>模型 <b>gz_x500_vision</b></span>
+        <span>融合 <b>EKF2 EV</b></span>
+        <span>控制 <b>PositionNedYaw</b></span>
+        <span>前置 <b>Lab 01B</b></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">i</span>
+        <div>
+          <h3>先说清楚：SITL 注入的不是 VIO 算法</h3>
+          <p>
+            <code>gz_x500_vision</code> 通过 Gazebo 的 odometry publisher 提供“真值里程计”，把它当作 external vision 喂给 PX4。
+            这验证的是 PX4 的 EV/EKF 通路，不是 VINS/OpenVINS 的视觉算法。真实 VIO 还要做相机-IMU 标定、时间同步、
+            尺度与失效检测；页面最后给出接入路径。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href={url("/drone/autonomy/")}>自主飞行路线</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Setup"
+        title="启动视觉模型并配置 EKF2"
+        lead="PX4 默认不启用外部视觉；必须显式打开 EV 融合并把高度参考切到 Vision。"
+      />
+      <div class="lab-steps">
+        <article class="lab-step reveal">
+          <span>01</span>
+          <div>
+            <h3>启动 vision 模型</h3>
+            <pre class="code-block"><code>make px4_sitl gz_x500_vision</code></pre>
+            <p>这是 PX4 官方的 x500 + odometry 模型；QGC 应自动连接。</p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>02</span>
+          <div>
+            <h3>打开 EV 融合</h3>
+            <pre class="code-block"><code>param set EKF2_EV_CTRL 7
+param set EKF2_HGT_REF 3
+param set EKF2_EV_DELAY 0
+param save</code></pre>
+            <p>7 = 水平位置 + 垂直位置 + 三维速度；3 = Vision 高度参考。保存后重启 SITL，让 HGT_REF 生效。</p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>03</span>
+          <div>
+            <h3>确认参数</h3>
+            <pre class="code-block"><code>param show EKF2_EV_CTRL
+param show EKF2_HGT_REF
+param show EKF2_EV_DELAY</code></pre>
+            <p>再执行 <code>listener vehicle_odometry</code>（不同版本 topic 名称可能不同），确认视觉数据在更新。</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Hover"
+        title="位置保持与小平移"
+        lead="脚本用位置设定点，不直接给速度；先悬停 6 s，再向北/东北移动 1.5 m，最后回 home 降落。"
+      />
+      <pre class="code-block code-block-tall reveal"><code>{code}</code></pre>
+      <p class="arch-note">
+        下载：<a href={url("/labs/vio_hover.py")}>vio_hover.py</a>。默认高度 3 m、平移 1.5 m、每个航点保持 6 s。
+      </p>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Verify"
+        title="确认“真的在用视觉”"
+        lead="不要只看飞机没掉。至少检查 EKF 的视觉输入、高度源、innovation 与模式。"
+      />
+      <div class="lab-verify-grid">
+        <article class="side-note reveal"><h3>QGC</h3><p>看 estimator 状态与高度源是否显示 Vision；看 local position 是否稳定。</p></article>
+        <article class="side-note reveal"><h3>PX4 控制台</h3><p><code>listener vehicle_odometry</code>、<code>listener estimator_status</code>；确认数据频率与创新。</p></article>
+        <article class="side-note reveal"><h3>日志</h3><p>ULog 中对比视觉与 EKF 输出；记录延迟、跳变与模式切换。</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="GPS-denied"
+        title="可选：关掉 GPS，只靠视觉"
+        lead="这是进阶测试，可能因 home/arming 失败。先备份参数，失败就恢复。"
+      />
+      <div class="lab-steps">
+        <article class="lab-step reveal">
+          <span>01</span>
+          <div>
+            <h3>禁用 GPS 融合</h3>
+            <pre class="code-block"><code>param set EKF2_GPS_CTRL 0
+param set EKF2_EV_CTRL 7
+param set EKF2_HGT_REF 3
+param save</code></pre>
+            <p>保存并重启 SITL。确认 QGC 不再把 GPS 作为位置/高度源。</p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>02</span>
+          <div>
+            <h3>低高度悬停</h3>
+            <pre class="code-block"><code>python vio_hover.py --altitude 2 --move 1 --hold 5</code></pre>
+            <p>如果解锁/起飞被拒，先恢复 GPS，检查 local position/home；不要用参数强行绕过安全检查。</p>
+          </div>
+        </article>
+      </div>
+      <div class="callout callout-compact reveal">
+        <span class="callout-icon" aria-hidden="true">!</span>
+        <div>
+          <h3>失败注入：视觉中断</h3>
+          <p>
+            在悬停中停止 Gazebo 或禁用 EV（取决于你的版本），观察 EKF 高度/位置与 failsafe。
+            SITL 里做够，再考虑真机；真实 VIO 失效往往比 GPS 丢失更隐蔽。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Real VIO"
+        title="从 SITL 真值到真实 VIO"
+        lead="真实 VIO 需要相机-IMU 标定、时间同步与失效检测；不是把一帧图像丢给 EKF。"
+      />
+      <div class="core-grid">
+        <article class="core-card reveal"><h3>算法</h3><p>VINS-Fusion、OpenVINS、ORB-SLAM3、FAST-LIO2（LiDAR）。先离线数据集，再上机。</p><div class="core-metrics"><span>VIO</span><span>SLAM</span><span>LiDAR</span></div></article>
+        <article class="core-card reveal"><h3>标定</h3><p>相机内参、IMU 噪声、相机-IMU 外参、时间偏移；任何一项错都会让尺度/姿态漂移。</p><div class="core-metrics"><span>内参</span><span>外参</span><span>时间</span></div></article>
+        <article class="core-card reveal"><h3>接入 PX4</h3><p>发布 VehicleOdometry；设置 EKF2_EV_DELAY、EKF2_EV_POS_*；验证坐标系与协方差。</p><div class="core-metrics"><span>MAVLink</span><span>uXRCE-DDS</span><span>EKF2</span></div></article>
+      </div>
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">→</span>
+        <div>
+          <h3>下一步：VINS-Fusion 离线 → 在线 → 飞行</h3>
+          <p>
+            先用 EuRoC 等公开数据集跑通 VINS/OpenVINS，再做相机-IMU 标定与时间同步，最后才把
+            VehicleOdometry 接到 PX4。不要在未验证尺度与延迟的情况下直接飞。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href={url("/drone/autonomy/")}>回到自主栈</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Troubleshooting"
+        title="常见失败"
+        lead="先确认 EKF 是否真的接收并接受视觉，再调控制。"
+      />
+      <div class="matrix-wrap reveal">
+        <table class="matrix failure-table">
+          <thead><tr><th scope="col">现象</th><th scope="col">可能原因</th><th scope="col">处理</th></tr></thead>
+          <tbody>
+            {failures.map((item) => (
+              <tr><td>{item.mode}</td><td>{item.cause}</td><td>{item.mitigation}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">!</span>
+        <div>
+          <h3>安全边界</h3>
+          <p>
+            本 Lab 仅用于 PX4 SITL。真实 VIO 飞行要处理标定、延迟、光照、纹理、运动模糊与失效检测；
+            首次真机必须在拆桨/系留/护网状态验证，并设置 geofence、failsafe 与人工接管。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href={url("/drone/safety/")}>安全页</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

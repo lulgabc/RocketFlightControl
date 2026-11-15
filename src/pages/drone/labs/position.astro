@@ -1,0 +1,199 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import SectionHead from "../../../components/SectionHead.astro";
+import { url } from "../../../lib/url";
+import code from "../../../labs/offboard_position.py?raw";
+
+const failures = [
+  { mode: "风里位置误差大", cause: "位置环带宽不足、倾角限制、风估计缺失。", mitigation: "记录平均/最大误差与倾角；先降速，再调位置环；不要用积分硬顶。" },
+  { mode: "方形过冲/振荡", cause: "位置设定点阶跃、速度/加速度限制、控制延迟。", mitigation: "加加减速限制、分段时间、降低 side；看日志中的 setpoint 与实际。" },
+  { mode: "丢 setpoint 后不降落", cause: "COM_OBL_RC_ACT 默认是 Position mode，不是 Land。", mitigation: "用 param show 确认；测试时显式设 4=Land，并观察模式切换。" },
+  { mode: "Offboard 直接退出", cause: "setpoint 流中断、超时参数过小、脚本异常。", mitigation: "看 COM_OF_LOSS_T；保持 setpoint ≥ 2 Hz；日志对齐脚本时间。" },
+  { mode: "起飞点漂移", cause: "风、EKF 收敛、home 设置。", mitigation: "等 health；记录 home；在无风世界先复现。" },
+  { mode: "降落点偏离", cause: "风、位置控制停止时机、下降过程漂移。", mitigation: "先回 home 再停 Offboard；留足降落时间；看 local position。" },
+];
+---
+
+<BaseLayout
+  title="Lab 01B · 位置设定点 + 风扰 + 失败注入"
+  description="把 PX4 Offboard 方形升级为 NED 位置设定点：windy 世界、误差测量、丢弃 setpoint 与 failsafe 观察。"
+  current="/drone/"
+>
+  <section class="page-hero">
+    <div class="container">
+      <div class="page-hero-top">
+        <a href={url("/drone/labs/")}>无人机实验室</a>
+        <span>/</span>
+        <span>Lab 01B</span>
+      </div>
+      <span class="eyebrow">Lab 01B · Position + Wind + Failure</span>
+      <h1>从“能飞方形”，<br />到“风里也可解释”。</h1>
+      <p>
+        速度设定点只看“往哪走”；位置设定点要求飞控把“到哪”闭环。再加 windy 世界与主动丢 setpoint，
+        你会第一次看到：风扰、积分、failsafe 与模式切换如何共同决定系统行为。
+      </p>
+      <div class="page-hero-meta">
+        <span>预计 <b>45–60 分钟</b></span>
+        <span>世界 <b>gz_x500_windy</b></span>
+        <span>控制 <b>PositionNedYaw</b></span>
+        <span>失效 <b>drop setpoint</b></span>
+        <span>前置 <b>Lab 01</b></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <SectionHead
+        eyebrow="What changes"
+        title="和 Lab 01 的三个差别"
+        lead="不是换个 API 名称，而是控制目标、扰动与安全责任都变了。"
+      />
+      <div class="core-grid">
+        <article class="core-card reveal"><h3>位置而不是速度</h3><p>发送 N/E/D 位置，PX4 内部的位置环负责速度与姿态；你不再直接决定每个瞬间的速度。</p><div class="core-metrics"><span>NED</span><span>PositionNedYaw</span><span>位置环</span></div></article>
+        <article class="core-card reveal"><h3>风是持续扰动</h3><p>windy 世界给持续风；位置误差、倾角与积分作用会同时出现。先记录，再调参，不要凭感觉。</p><div class="core-metrics"><span>windy</span><span>稳态误差</span><span>倾角</span></div></article>
+        <article class="core-card reveal"><h3>主动制造失效</h3><p>停止 setpoint 流，观察 PX4 在 COM_OF_LOSS_T 后执行 COM_OBL_RC_ACT。默认是 Position，不是 Land。</p><div class="core-metrics"><span>drop</span><span>failsafe</span><span>mode</span></div></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Setup"
+        title="启动 windy 世界"
+        lead="先无风跑通，再开风。每次只改变一个变量，否则你无法归因。"
+      />
+      <div class="lab-steps">
+        <article class="lab-step reveal">
+          <span>01</span>
+          <div>
+            <h3>无风基线</h3>
+            <pre class="code-block"><code>make px4_sitl gz_x500
+python offboard_position.py</code></pre>
+            <p>下载脚本：<a href={url("/labs/offboard_position.py")}>offboard_position.py</a>。</p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>02</span>
+          <div>
+            <h3>风扰</h3>
+            <pre class="code-block"><code>make px4_sitl gz_x500_windy
+python offboard_position.py --side 2 --leg 5</code></pre>
+            <p>记录平均/最大位置误差、最大倾角与恢复时间；不要只看“有没有炸”。</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Code"
+        title="位置设定点脚本"
+        lead="脚本支持正常方形与 --drop-after 失败注入。位置是 NED，向下为负。"
+      />
+      <pre class="code-block code-block-tall reveal"><code>{code}</code></pre>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Failure injection"
+        title="主动丢掉 setpoint"
+        lead="这是本 Lab 最重要的部分：系统在“指挥链断掉”后是否进入可预期状态。"
+      />
+      <div class="lab-steps">
+        <article class="lab-step reveal">
+          <span>01</span>
+          <div>
+            <h3>确认参数</h3>
+            <pre class="code-block"><code>param show COM_OF_LOSS_T
+param show COM_OBL_RC_ACT</code></pre>
+            <p>当前 PX4 默认 <code>COM_OF_LOSS_T=1.0 s</code>、<code>COM_OBL_RC_ACT=0</code>（Position）。以你本地版本为准。</p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>02</span>
+          <div>
+            <h3>丢流并观察</h3>
+            <pre class="code-block"><code>python offboard_position.py --drop-after 4 --drop-hold 8</code></pre>
+            <p>脚本在位置保持 4 s 后停止发送 setpoint。观察 QGC 模式、PX4 控制台与飞机行为。</p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>03</span>
+          <div>
+            <h3>改成 Land 兜底</h3>
+            <pre class="code-block"><code>param set COM_OBL_RC_ACT 4
+param set COM_OF_LOSS_T 1.0</code></pre>
+            <p>4 = Land mode。重新跑一次丢流，确认它确实进入降落，而不是继续悬停。</p>
+          </div>
+        </article>
+      </div>
+      <div class="callout callout-compact reveal">
+        <span class="callout-icon" aria-hidden="true">!</span>
+        <div>
+          <h3>失败注入要在仿真里做够</h3>
+          <p>
+            真机上不要用“拔线/关地面站”作为第一次 failsafe 测试。先在 SITL 里把模式切换、超时、降落/返航行为看清楚，
+            再在拆桨/系留状态做硬件验证。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Acceptance"
+        title="验收：用数据说话"
+        lead="至少给出无风/有风两组数据，以及一次丢流失败注入的模式切换记录。"
+      />
+      <div class="lab-verify-grid">
+        <article class="side-note reveal"><h3>位置误差</h3><p>记录每个航点的平均误差与最大误差；风里允许更大，但要有趋势与解释。</p></article>
+        <article class="side-note reveal"><h3>姿态/倾角</h3><p>看最大倾角是否接近限制；如果长期顶满，说明风太大或控制余量不足。</p></article>
+        <article class="side-note reveal"><h3>失效行为</h3><p>记录丢流到模式切换的时间、切换后的模式与最终状态。</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Troubleshooting"
+        title="常见失败"
+        lead="先看 PX4 参数与日志，再改脚本。"
+      />
+      <div class="matrix-wrap reveal">
+        <table class="matrix failure-table">
+          <thead><tr><th scope="col">现象</th><th scope="col">可能原因</th><th scope="col">处理</th></tr></thead>
+          <tbody>
+            {failures.map((item) => (
+              <tr><td>{item.mode}</td><td>{item.cause}</td><td>{item.mitigation}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">→</span>
+        <div>
+          <h3>下一步：Lab 02 外部视觉</h3>
+          <p>
+            位置环跑通后，把位置来源从 GPS 换成 external vision。先做 SITL 注入，再接真实 VIO；
+            先验证 EKF 是否真的使用视觉，再谈自主飞行。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href={url("/drone/labs/vio/")}>进入 Lab 02</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

@@ -12,10 +12,18 @@ const labs = [
     href: "/drone/labs/offboard/",
   },
   {
+    index: "01B",
+    title: "位置设定点 + 风扰 + 失败注入",
+    detail: "把速度方形升级为 NED 位置设定点，在 windy 世界测误差，并主动丢 setpoint 观察 failsafe。",
+    status: "可开始",
+    href: "/drone/labs/position/",
+  },
+  {
     index: "02",
     title: "VIO 悬停与外部视觉",
-    detail: "VINS-Fusion/OpenVINS 输出位姿，接入 PX4 外部视觉；验证尺度、延迟与失效。",
-    status: "规划中",
+    detail: "gz_x500_vision 注入外部视觉，配置 EKF2 EV 融合，做位置保持与小平移。",
+    status: "可开始",
+    href: "/drone/labs/vio/",
   },
   {
     index: "03",
@@ -57,7 +65,7 @@ const labs = [
       </p>
       <div class="page-hero-meta">
         <span>实验 <b>{labs.length} 个</b></span>
-        <span>可开始 <b>1 个</b></span>
+        <span>可开始 <b>3 个</b></span>
         <span>环境 <b>Ubuntu 22.04 / 24.04</b></span>
         <span>仿真 <b>PX4 SITL + Gazebo</b></span>
         <span>接口 <b>MAVSDK / MAVLink</b></span>
@@ -79,7 +87,7 @@ const labs = [
             <h3>{lab.title}</h3>
             <p>{lab.detail}</p>
             {lab.href ? (
-              <div class="build-gate"><a href={url(lab.href)}>进入 Lab 01 →</a></div>
+              <div class="build-gate"><a href={url(lab.href)}>进入 {lab.index} →</a></div>
             ) : (
               <div class="build-gate">待发布</div>
             )}
