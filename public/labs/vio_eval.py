@@ -59,7 +59,19 @@ def load_euroc_gt(path: Path) -> tuple[np.ndarray, np.ndarray]:
 
 
 def load_tum(path: Path) -> tuple[np.ndarray, np.ndarray]:
-    data = np.loadtxt(path, comments="#")
+    rows = []
+    with open(path, "r", encoding="utf-8", errors="ignore") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.replace(",", " ").split()
+            if len(parts) < 4:
+                continue
+            rows.append([float(v) for v in parts[:4]])
+    if not rows:
+        raise SystemExit(f"no samples in {path}")
+    data = np.asarray(rows)
     return data[:, 0], data[:, 1:4]
 
 

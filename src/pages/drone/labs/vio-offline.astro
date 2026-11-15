@@ -319,34 +319,88 @@ scale        sim3 对齐后的尺度（应接近 1）</code></pre>
         <article class="lab-step reveal">
           <span>01</span>
           <div>
-            <h3>容器里跑 ROS 1 版本</h3>
-            <pre class="code-block"><code>docker run -it --rm --net=host \
-  -v ~/bags:/data -v ~/euroc:/euroc \
-  ros:noetic-ros-base bash</code></pre>
-            <p>VINS-Fusion 官方主线是 ROS 1；Ubuntu 24.04 上最省事的是 Noetic 容器，或使用固定提交的 ROS 2 移植。</p>
+            <h3>用 ROS 2 Jazzy 移植版</h3>
+            <pre class="code-block"><code>cd ~/vins_ws/src
+git clone https://github.com/cannnnxu/VINS-Fusion-ROS2-jazzy.git
+cd VINS-Fusion-ROS2-jazzy
+# Jazzy 的 cv_bridge 头文件是 .hpp
+grep -rl "cv_bridge/cv_bridge.h" . | xargs sed -i \
+  's|cv_bridge/cv_bridge.h|cv_bridge/cv_bridge.hpp|g'</code></pre>
+            <p>官方主线是 ROS 1；这个移植版把节点搬到了 Jazzy。先确认它与你使用的提交一致，再谈结果。</p>
           </div>
         </article>
         <article class="lab-step reveal">
           <span>02</span>
           <div>
-            <h3>同配置、同序列</h3>
-            <pre class="code-block"><code>rosrun vins vins_node \
-  ~/catkin_ws/src/VINS-Fusion/config/euroc/euroc_stereo_imu_config.yaml
-rosbag play /data/V1_01_easy.bag</code></pre>
-            <p>输出轨迹转成 TUM 格式后，用同一个 <code>vio_eval.py</code> 计算 ATE/RPE。</p>
+            <h3>固定 Ceres 2.1</h3>
+            <pre class="code-block"><code># Ubuntu 24.04 自带 Ceres 2.2，移除了 LocalParameterization
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt/ceres-2.1 \
+  -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
+  -DBUILD_EXAMPLES=OFF -DCUDA=OFF -DSUITESPARSE=OFF
+make -j2 && sudo make install
+
+colcon build --packages-select vins --cmake-args \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCeres_DIR=/opt/ceres-2.1/lib/cmake/Ceres</code></pre>
+            <p>装到独立前缀，避免覆盖 OpenVINS 使用的系统 Ceres 2.2。</p>
           </div>
         </article>
         <article class="lab-step reveal">
           <span>03</span>
           <div>
-            <h3>比较什么</h3>
-            <pre class="code-block"><code>精度：ATE / RPE / 尺度
-稳定性：跟丢次数 / 初始化时间
-资源：CPU 占用 / 单帧耗时 / 内存
-工程：ROS 版本 / 标定流程 / 输出接口</code></pre>
-            <p>只比 ATE 会误导：一个更容易跟丢、延迟更大的算法，平均误差可能更低。</p>
+            <h3>修输出时间戳</h3>
+            <pre class="code-block"><code># visualization.cpp 里写时间戳前是 precision(0)，会截断到整秒
+sed -i 's/foutC.precision(0);/foutC.precision(9);/' \
+  vins/src/utility/visualization.cpp
+colcon build --packages-select vins</code></pre>
+            <p>
+              不修这一行，CSV 里一秒内 10 个位姿共享同一个时间戳，评估时的时间对齐会完全错掉。
+              我们第一次跑出的 RPE 50% 就是这个原因，不是算法突然变差。
+            </p>
           </div>
         </article>
+        <article class="lab-step reveal">
+          <span>04</span>
+          <div>
+            <h3>同序列、同评估</h3>
+            <pre class="code-block"><code>chmod +x run_vins_euroc.sh
+RATE=0.5 ./run_vins_euroc.sh ~/bags/V1_01_easy ~/vins_results/v1_01
+
+python3 vio_eval.py --est ~/vins_results/v1_01/vio.csv \
+  --gt ~/euroc/mav0/state_groundtruth_estimate0/data.csv \
+  --est-format tum</code></pre>
+            <p>VINS 的 CSV 比 OpenVINS 少了协方差与偏置列，但时间、位置列足够算 ATE/RPE。</p>
+          </div>
+        </article>
+      </div>
+
+      <div class="matrix-wrap reveal" style="margin-top: 22px;">
+        <table class="matrix">
+          <thead><tr><th scope="col">指标（V1_01_easy）</th><th scope="col">OpenVINS</th><th scope="col">VINS-Fusion</th></tr></thead>
+          <tbody>
+            <tr><td>ATE RMSE</td><td><b>0.060 m</b></td><td>0.116 m</td></tr>
+            <tr><td>ATE 最大</td><td><b>0.116 m</b></td><td>0.215 m</td></tr>
+            <tr><td>1 s RPE</td><td><b>0.018 m</b></td><td>0.024 m</td></tr>
+            <tr><td>输出频率</td><td>约 20 Hz</td><td>约 10 Hz</td></tr>
+            <tr><td>轨迹覆盖</td><td>2780 位姿 / 139 s</td><td>1436 位姿 / 143.5 s</td></tr>
+            <tr><td>运行条件</td><td>1.0x 播放</td><td>0.5x 播放</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout reveal" style="margin-top: 22px;">
+        <span class="callout-icon" aria-hidden="true">✓</span>
+        <div>
+          <h3>实测结论 · 2026-11-15</h3>
+          <p>
+            同一段 bag、同一份 EuRoC 真值、同一个 <code>vio_eval.py</code>：这套默认配置下 OpenVINS 的
+            ATE 与 RPE 都更好；VINS-Fusion 的优化后端与回环在这个短序列上没有发挥空间，而且只跑了一次。
+          </p>
+          <p>
+            不要把这个结果推广成“OpenVINS 一定更好”。VINS 的优势在更长序列、回环、GPS/多传感器融合；
+            真要选型，至少跑 V1_01/V1_02/MH_01 三段，并记录跟丢、初始化和 CPU 占用。
+          </p>
+        </div>
       </div>
     </div>
   </section>
@@ -420,7 +474,8 @@ rosbag play /data/V1_01_easy.bag</code></pre>
           <p>
             下载：<a href={url("/labs/euroc_to_ros2.py")}>euroc_to_ros2.py</a>、
             <a href={url("/labs/vio_eval.py")}>vio_eval.py</a>、
-            <a href={url("/labs/run_openvins_euroc.sh")}>run_openvins_euroc.sh</a>。
+            <a href={url("/labs/run_openvins_euroc.sh")}>run_openvins_euroc.sh</a>、
+            <a href={url("/labs/run_vins_euroc.sh")}>run_vins_euroc.sh</a>。
             所有实验仅用于离线数据集与 SITL；真机 VIO 必须先做标定、时间同步与失效检测。
           </p>
         </div>

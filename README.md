@@ -13,7 +13,7 @@
 - **技术趋势与事实核查** — 逐条标注“已核实 / 部分属实 / 需修正 / 未证实”：SpaceX 的 Linux + C/C++ + Actor-Judge、Starlink 回传、Linux 6.12 PREEMPT_RT、Ferrocene、NASA HPSC、Clarabel / FATROP 等，并给出边界与来源。
 - **工业前沿** — 7 家机构独立子页面：SpaceX、Blue Origin、Rocket Lab、Lockheed Martin、Boeing、NASA、ESA。每页含 2026 最新状态、主要项目、技术栈、研究方向、公开项目、来源与信息边界；总览页提供时间线与横向对比。
 - **工程核心** — 5 个硬核知识页：火箭发动机、太空飞船、轨道力学、再入与热防护、结构/材料/制造。每页含第一性原理公式、工程权衡、失效模式、参考型号、开源项目与专业资源。
-- **无人机实验室** — 5 条路线：PX4/ArduPilot 自主栈、Betaflight/ExpressLRS FPV、Jetson 边缘 AI、Crazyflie 蜂群、Remote ID/空域与安全。含构建步骤、失效模式、开源项目与 2026 趋势；附可运行的 **Lab 01（PX4 SITL + Offboard）**、**Lab 01B（位置设定点 + 风扰 + 失败注入）**、**Lab 02（外部视觉/VIO）**、**Lab 03（EuRoC + OpenVINS 离线 VIO 与 ATE/RPE 评估）**。
+- **无人机实验室** — 5 条路线：PX4/ArduPilot 自主栈、Betaflight/ExpressLRS FPV、Jetson 边缘 AI、Crazyflie 蜂群、Remote ID/空域与安全。含构建步骤、失效模式、开源项目与 2026 趋势；附可运行的 **Lab 01（PX4 SITL + Offboard）**、**Lab 01B（位置设定点 + 风扰 + 失败注入）**、**Lab 02（外部视觉/VIO）**、**Lab 03（EuRoC + OpenVINS/VINS-Fusion 离线 VIO 与 ATE/RPE 评估）**。
 - **资源库** — 80 条精选书、公开课、开源飞控、仿真工具、标准与社区入口，新增 **Rust 安全关键生态**（Ferrocene、sat-rs、Nyx、RTIC、Embassy）与 **形式化验证**（Kani、Creusot、Verus、Aeneas、hax、KeYmaera X、CORA、SPARK、seL4），标注难度、语言和用途。
 - **交互工具箱** — 齐奥尔科夫斯基 Δv 计算器、ISA 标准大气与动压计算器、单轴姿态 PID 阶跃响应模拟器（Canvas，本地运行），以及 Rust / 形式化验证工具选型表。
 - **安全与学习方法** — 时间预期、每周节奏、为什么这样排序，以及推进剂、空域、许可与飞行终止的安全边界。
