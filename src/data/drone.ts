@@ -146,6 +146,7 @@ export const DRONE_TRACKS: DroneTrack[] = [
       { label: "阶段 03 · 导航与制导", href: "/roadmap/#gnc" },
       { label: "C/C++ 工程 · GNC", href: "/flight-software/#gnc" },
       { label: "工程核心 · 飞船 GNC", href: "/engineering/spacecraft/" },
+      { label: "Lab 01 · PX4 Offboard", href: "/drone/labs/offboard/" },
     ],
     boundaries:
       "本页不提供绕过空域/适航/Remote ID 的方法，也不提供对他人无人机进行干扰、劫持或攻击的操作。真实飞行必须在合法空域、合规设备与当地法规下进行。",

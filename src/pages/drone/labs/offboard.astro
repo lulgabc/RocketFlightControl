@@ -1,0 +1,249 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import SectionHead from "../../../components/SectionHead.astro";
+import { url } from "../../../lib/url";
+import code from "../../../labs/offboard_square.py?raw";
+
+const steps = [
+  "连接 PX4 SITL，等待 heartbeat 与 EKF 健康",
+  "解锁、起飞到 5 m，确认位置保持",
+  "进入 Offboard，按北/东/南/西飞一个方形",
+  "停止 Offboard，自动降落并检查日志",
+];
+
+const failures = [
+  { mode: "一直等待连接", cause: "PX4 未启动、地址不是 udp://:14540、防火墙/端口占用。", mitigation: "先启动 SITL；确认 QGC 能连；检查 14540；结束旧 PX4 进程。" },
+  { mode: "Offboard start 被拒绝", cause: "没有持续 setpoint、未解锁、模式不允许。", mitigation: "先发零速度 setpoint 并保持；确认已 arm；检查 PX4 模式与参数。" },
+  { mode: "健康检查一直不通过", cause: "EKF 未收敛、home 未设置、仿真传感器未就绪。", mitigation: "等待 GPS/EKF；用 commander check；不要用参数强行绕过。" },
+  { mode: "起飞后立刻降落", cause: "Offboard 超时、遥控接管、failsafe 触发。", mitigation: "检查 COM_OF_LOSS_T / RC 开关；看 QGC 状态与 PX4 控制台。" },
+  { mode: "脚本报 mavsdk 导入错误", cause: "不在 venv、Python 版本过旧、pip 装错环境。", mitigation: "确认 python -V；激活 venv；pip show mavsdk。" },
+  { mode: "Gazebo 黑屏/卡顿", cause: "OpenGL/显卡/远程桌面；资源不足。", mitigation: "HEADLESS=1；降低世界复杂度；本机图形会话运行。" },
+];
+---
+
+<BaseLayout
+  title="Lab 01 · PX4 SITL + Offboard"
+  description="PX4 SITL + Gazebo + MAVSDK 的 Offboard 方形实验：安装、启动、Python 代码、验收、日志与失效模式。"
+  current="/drone/"
+>
+  <section class="page-hero">
+    <div class="container">
+      <div class="page-hero-top">
+        <a href={url("/drone/labs/")}>无人机实验室</a>
+        <span>/</span>
+        <span>Lab 01</span>
+      </div>
+      <span class="eyebrow">Lab 01 · Offboard</span>
+      <h1>从 SITL 起飞，<br />画一个可控的方形。</h1>
+      <p>
+        目标不是“让飞机动一下”，而是把 PX4 的估计/控制、MAVSDK 的接口、Offboard 的 setpoint 流、
+        失效保护与日志连成一条可复现的链路。完成后你会得到一份能重复运行的实验记录。
+      </p>
+      <div class="page-hero-meta">
+        <span>预计 <b>45–90 分钟</b></span>
+        <span>环境 <b>Ubuntu 22.04 / 24.04</b></span>
+        <span>仿真 <b>Gazebo Harmonic</b></span>
+        <span>机体 <b>x500</b></span>
+        <span>接口 <b>MAVSDK Python</b></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <SectionHead
+        eyebrow="Outcome"
+        title="完成后你应该能解释"
+        lead="实验的验收不是“视频里飞起来了”，而是你能复现、能测量、能说明每一步为什么这样做。"
+      />
+      <div class="core-grid">
+        {steps.map((step, index) => (
+          <article class="core-card reveal">
+            <span class="build-week">{String(index + 1).padStart(2, "0")}</span>
+            <h3>{step}</h3>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Architecture"
+        title="谁在控制谁"
+        lead="PX4 仍然是飞控；MAVSDK 只是通过 MAVLink 发送 setpoint 与命令。Offboard 不是绕过飞控，而是把“意图”交给飞控。"
+      />
+      <div class="arch-wrap reveal">
+        <pre class="arch" aria-label="PX4 SITL 与 MAVSDK 的 Offboard 架构">
+┌────────────────────┐        MAVLink / UDP :14540        ┌────────────────────┐
+│  Python + MAVSDK   │ ─────────────────────────────────► │  PX4 SITL          │
+│  offboard_square   │ ◄───────────────────────────────── │  EKF / 控制器      │
+└────────────────────┘        telemetry / ack            └─────────┬──────────┘
+                                                                  │ uORB
+                                                                  ▼
+                                                        ┌────────────────────┐
+                                                        │  Gazebo x500       │
+                                                        │  传感器 / 动力学    │
+                                                        └────────────────────┘
+        ▲                                                          │
+        └──────────── QGroundControl（UDP :14550）◄───────────────┘</pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Setup"
+        title="环境与启动"
+        lead="以下命令以 PX4 官方 Ubuntu 开发环境为准。Ubuntu 24.04 是当前 CI 目标；22.04 也受支持。不要用 Windows 原生环境硬跑 Gazebo。"
+      />
+      <div class="lab-steps">
+        <article class="lab-step reveal">
+          <span>01</span>
+          <div>
+            <h3>安装 PX4 工具链</h3>
+            <pre class="code-block"><code>git clone https://github.com/PX4/PX4-Autopilot.git --recursive
+cd PX4-Autopilot
+bash ./Tools/setup/ubuntu.sh</code></pre>
+            <p>完成后重启/重新登录。脚本会安装 Gazebo Harmonic、编译器与仿真依赖。</p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>02</span>
+          <div>
+            <h3>启动 SITL + Gazebo</h3>
+            <pre class="code-block"><code>make px4_sitl gz_x500</code></pre>
+            <p>首次构建较久。无图形环境可用 <code>HEADLESS=1 make px4_sitl gz_x500</code>；QGC 应能自动连上。</p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>03</span>
+          <div>
+            <h3>安装 MAVSDK</h3>
+            <pre class="code-block"><code>python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip mavsdk</code></pre>
+            <p>建议 Python 3.10+。不要把 MAVSDK 装进系统 Python 或另一个虚拟环境。</p>
+          </div>
+        </article>
+        <article class="lab-step reveal">
+          <span>04</span>
+          <div>
+            <h3>运行脚本</h3>
+            <pre class="code-block"><code>python offboard_square.py</code></pre>
+            <p>下载地址：<a href={url("/labs/offboard_square.py")}>offboard_square.py</a>。默认高度 5 m、速度 2 m/s、每边 3 s。</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Code"
+        title="完整脚本"
+        lead="脚本带连接超时、EKF 健康检查、Offboard 异常与降落兜底。先读一遍，再改参数。"
+      />
+      <pre class="code-block code-block-tall reveal"><code>{code}</code></pre>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Verify"
+        title="验收与日志"
+        lead="至少记录：起飞高度、方形四边、降落状态、任何 failsafe/模式切换，以及一次人为断开 setpoint 的结果。"
+      />
+      <div class="lab-verify-grid">
+        <article class="side-note reveal">
+          <h3>QGroundControl</h3>
+          <p>确认模式从 Position → Offboard → Land；看高度、速度、电池与消息；保存飞行日志。</p>
+        </article>
+        <article class="side-note reveal">
+          <h3>PX4 控制台</h3>
+          <p>在 SITL 终端执行 <code>commander status</code>、<code>listener vehicle_local_position</code>，确认 setpoint 与本地位置。</p>
+        </article>
+        <article class="side-note reveal">
+          <h3>日志复盘</h3>
+          <p>下载 ULog，至少画高度/速度/姿态；确认 Offboard 开始/结束时间与脚本打印一致。</p>
+        </article>
+      </div>
+      <div class="callout callout-compact reveal">
+        <span class="callout-icon" aria-hidden="true">!</span>
+        <div>
+          <h3>主动做一次失效测试</h3>
+          <p>
+            在悬停时按 Ctrl+C 终止脚本（或断开 setpoint），观察 PX4 的 Offboard 超时行为。
+            这项测试比“成功飞完”更能说明系统是否安全。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Troubleshooting"
+        title="常见失败"
+        lead="先看 PX4 控制台与 QGC 状态，再看脚本。大多数问题不在 Python。"
+      />
+      <div class="matrix-wrap reveal">
+        <table class="matrix failure-table">
+          <thead>
+            <tr>
+              <th scope="col">现象</th>
+              <th scope="col">可能原因</th>
+              <th scope="col">处理</th>
+            </tr>
+          </thead>
+          <tbody>
+            {failures.map((item) => (
+              <tr>
+                <td>{item.mode}</td>
+                <td>{item.cause}</td>
+                <td>{item.mitigation}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Next"
+        title="下一步"
+        lead="跑通方形后，按顺序加难度：参数变化 → 风扰 → 视觉 → 伴飞计算机 → 多机。"
+      />
+      <div class="link-grid">
+        <a class="link-card reveal" href={url("/drone/autonomy/")}><span class="link-card-arrow">↗</span><h3>自主飞行路线</h3><p>VIO、避障、ROS 2 与失效保护。</p></a>
+        <a class="link-card reveal" href={url("/drone/edge-ai/")}><span class="link-card-arrow">↗</span><h3>机载边缘 AI</h3><p>Jetson、TensorRT 与延迟/热预算。</p></a>
+        <a class="link-card reveal" href={url("/drone/swarm/")}><span class="link-card-arrow">↗</span><h3>蜂群</h3><p>Crazyswarm2 与 UWB 多机。</p></a>
+        <a class="link-card reveal" href={url("/drone/safety/")}><span class="link-card-arrow">↗</span><h3>安全与空域</h3><p>Remote ID、围栏与 DAA。</p></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <div class="callout reveal">
+        <span class="callout-icon" aria-hidden="true">!</span>
+        <div>
+          <h3>安全边界</h3>
+          <p>
+            本 Lab 只适用于 PX4 SITL/Gazebo，不可直接用于真机。真机必须拆桨/系留/护网、设置 failsafe 与 geofence、
+            确认空域与保险，并由有经验人员陪同。不要在人群、机场、应急区域或禁飞区飞行。
+          </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href={url("/drone/safety/")}>安全页</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

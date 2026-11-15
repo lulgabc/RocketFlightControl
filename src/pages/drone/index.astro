@@ -38,6 +38,10 @@ const maturityLabel: Record<string, string> = {
         <span>构建路径 <b>{DRONE_BUILDS.length} 条</b></span>
         <span>快照 <b>2026-11-15</b></span>
       </div>
+      <div class="btn-row">
+        <a class="btn btn-primary" href={url("/drone/labs/offboard/")}>从 Lab 01 开始 <span aria-hidden="true">→</span></a>
+        <a class="btn btn-ghost" href={url("/drone/labs/")}>全部实验</a>
+      </div>
     </div>
   </section>
 

@@ -4558,6 +4558,84 @@ html.reduce-motion .reveal {
 
 /* ---------- Drone lab ---------- */
 
+.code-block {
+  margin: 10px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #070b12;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.code-block code {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+}
+
+.code-block-tall {
+  max-height: 660px;
+  overflow: auto;
+  font-size: 0.7rem;
+}
+
+.lab-steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.lab-step {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+}
+
+.lab-step > span {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+}
+
+.lab-step h3 {
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+}
+
+.lab-step p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.65;
+}
+
+.lab-verify-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.lab-verify-grid .side-note {
+  background: var(--panel);
+}
+
 .drone-stack-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -5206,6 +5284,11 @@ html.reduce-motion .reveal {
   }
 
   .build-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lab-steps,
+  .lab-verify-grid {
     grid-template-columns: 1fr;
   }
 }
