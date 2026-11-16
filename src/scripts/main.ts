@@ -29,10 +29,11 @@ if (themeToggle) {
 const menuToggle = document.querySelector<HTMLButtonElement>("[data-menu-toggle]");
 const nav = document.getElementById("site-nav");
 
-const closeMenu = () => {
+const closeMenu = (restoreFocus = false) => {
   nav?.classList.remove("is-open");
   menuToggle?.setAttribute("aria-expanded", "false");
   menuToggle?.setAttribute("aria-label", "打开导航菜单");
+  if (restoreFocus) menuToggle?.focus();
 };
 
 menuToggle?.addEventListener("click", () => {
@@ -46,7 +47,13 @@ nav?.addEventListener("click", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") closeMenu();
+  if (event.key !== "Escape") return;
+  const wasOpen = nav?.classList.contains("is-open") ?? false;
+  closeMenu(wasOpen);
+});
+
+window.matchMedia("(min-width: 901px)").addEventListener("change", (event) => {
+  if (event.matches) closeMenu();
 });
 
 /* ---------- Header scroll state ---------- */

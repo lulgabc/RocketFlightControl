@@ -21,14 +21,6 @@ export const SITE = {
   ],
 };
 
-export const SITE_STATS = [
-  { value: "7", label: "学习阶段", note: "从数学地基到回收制导" },
-  { value: "42", label: "能力检查点", note: "每一条都能动手验证" },
-  { value: "12", label: "实践项目", note: "从一维仿真到探空火箭" },
-  { value: "49", label: "精选资源", note: "书、课程、开源与标准" },
-  { value: "3", label: "交互工具", note: "Δv、PID 与标准大气" },
-];
-
 export const PRINCIPLES = [
   {
     index: "01",

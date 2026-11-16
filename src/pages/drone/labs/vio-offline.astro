@@ -12,13 +12,12 @@ const failures = [
   { mode: "跑一半跟丢", cause: "快速旋转、运动模糊、纹理不足、曝光变化。", mitigation: "记录跟踪特征数与重投影误差；换序列复现；不要只调阈值掩盖问题。" },
   { mode: "CPU 跑不满 20 Hz", cause: "立体 + 每帧特征过多；VM 无 GPU；并行线程争抢。", mitigation: "先用单目；降 max_features；关 RViz；把 bag 以 0.5x 播放做离线诊断。" },
   { mode: "Jazzy 编译失败", cause: "官方安装文档停留在 Galactic；OpenCV/Ceres/Eigen 版本差异。", mitigation: "用 master + Jazzy 实测组合；关 matplotlib；把完整错误贴到 issue 前先搜索。" },
-  { mode: "直接接 PX4 就漂", cause: "世界系/NED 未转换、yaw 未对齐、延迟未补偿、协方差虚假自信。", mitigation: "先接 VehicleOdometry 做地面静态测试；再悬停；最后才飞航线。" },
 ];
 ---
 
 <BaseLayout
   title="Lab 03 · 离线 VIO：OpenVINS / VINS-Fusion"
-  description="用 EuRoC 数据集离线跑 OpenVINS：ROS 2 Jazzy 安装、EuRoC 转 ROS 2 bag、ATE/RPE 评估、VINS-Fusion 对比与接入 PX4 的验收门槛。"
+  description="用 EuRoC 数据集离线跑 OpenVINS 与 VINS-Fusion：ROS 2 Jazzy 安装、EuRoC 转 ROS 2 bag、ATE/RPE 评估与复现实验；不接飞控。"
   current="/drone/"
 >
   <section class="page-hero">
@@ -32,12 +31,12 @@ const failures = [
       <h1>先把轨迹跑对，<br />再让飞机相信它。</h1>
       <p>
         Lab 02 的 <code>gz_x500_vision</code> 注入的是仿真真值，不是 VIO。这个 Lab 换真正的视觉惯性里程计：
-        在 EuRoC 上跑 OpenVINS，记录轨迹，用 ATE/RPE 与真值比较；再讨论 VINS-Fusion 与接入 PX4 的边界。
+        在 EuRoC 上跑 OpenVINS 与 VINS-Fusion，记录轨迹，用 ATE/RPE 与真值比较；接飞控的部分拆到 Lab 03B。
       </p>
       <div class="page-hero-meta">
-        <span>预计 <b>90–120 分钟</b></span>
+        <span>预计 <b>2–3 小时</b></span>
         <span>数据 <b>EuRoC V1_01_easy</b></span>
-        <span>算法 <b>OpenVINS MSCKF</b></span>
+        <span>算法 <b>OpenVINS · VINS-Fusion</b></span>
         <span>指标 <b>ATE / RPE</b></span>
         <span>前置 <b>Lab 02</b></span>
       </div>
@@ -408,291 +407,17 @@ python3 vio_eval.py --est ~/vins_results/v1_01/vio.csv \
   <section class="section tight">
     <div class="container">
       <SectionHead
-        eyebrow="To PX4"
-        title="从离线轨迹到 EKF2 外部视觉"
-        lead="坐标系、时间、协方差、失效检测，任何一项没处理，EKF 都会“礼貌地”忽略你或慢慢漂。"
+        eyebrow="Next"
+        title="算法跑通之后，再接到飞控"
+        lead="Lab 03 只回答“轨迹准不准”；Lab 03B 才回答“EKF2 信不信”。"
       />
-      <div class="core-grid">
-        <article class="core-card reveal"><h3>坐标系</h3><p>VIO 多为 z-up 世界系；PX4 要 NED / FRD。转换 yaw、位置与速度，别只翻 z 轴。</p><div class="core-metrics"><span>ENU→NED</span><span>yaw</span><span>外参</span></div></article>
-        <article class="core-card reveal"><h3>时间</h3><p>相机-IMU 时间偏移、处理延迟、时间戳抖动。EKF2_EV_DELAY 补偿固定延迟，不补偿抖动。</p><div class="core-metrics"><span>dt</span><span>delay</span><span>jitter</span></div></article>
-        <article class="core-card reveal"><h3>协方差</h3><p>不要发全零或过度自信的协方差；EKF 会信你，然后一起漂。用离线残差校准噪声。</p><div class="core-metrics"><span>cov</span><span>NEES</span><span>innovation</span></div></article>
-        <article class="core-card reveal"><h3>接口</h3><p>PX4 v1.15+ 优先走 uXRCE-DDS 的 <code>VehicleOdometry</code>；老系统可用 MAVLink ODOMETRY。</p><div class="core-metrics"><span>uXRCE-DDS</span><span>MAVLink</span><span>EKF2</span></div></article>
-      </div>
-      <div class="matrix-wrap reveal">
-        <table class="matrix">
-          <thead><tr><th scope="col">验收项</th><th scope="col">门槛（建议）</th><th scope="col">怎么测</th></tr></thead>
-          <tbody>
-            <tr><td>离线 ATE</td><td>&lt; 0.2 m（V1_01）</td><td>同一 bag 重复 3 次，看离散度</td></tr>
-            <tr><td>1 s RPE</td><td>&lt; 3 cm</td><td>固定窗口；与同序列基线比较</td></tr>
-            <tr><td>初始化</td><td>&lt; 5 s，且可重复</td><td>从静止开始，记录成功次数</td></tr>
-            <tr><td>输出频率</td><td>≥ 20 Hz，抖动可控</td><td>ros2 topic hz / 时间戳差</td></tr>
-            <tr><td>端到端延迟</td><td>&lt; 50 ms（含图像）</td><td>闪光/快速平移对照；扫 EKF2_EV_DELAY</td></tr>
-            <tr><td>失效检测</td><td>跟丢时能上报</td><td>遮相机/快速旋转，观察 EKF 与 failsafe</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <SectionHead
-        eyebrow="Bench test"
-        title="地面静态实测：EKF2 真的在跟 VIO 走吗？"
-        lead="不要只看“飞机没掉”。给 VIO 位置加一个已知的慢斜坡，看 PX4 的 local position 是否跟着走。"
-      />
-      <div class="lab-steps">
-        <article class="lab-step reveal">
-          <span>01</span>
-          <div>
-            <h3>启动 PX4 SITL</h3>
-            <pre class="code-block"><code>cd ~/px4
-make px4_sitl gz_x500</code></pre>
-            <p>保持进程前台运行。后台跑时用 <code>tail -f /dev/null | make ...</code> 顶住 stdin，否则 PX4 shell 读到 EOF 会退出。</p>
-          </div>
-        </article>
-        <article class="lab-step reveal">
-          <span>02</span>
-          <div>
-            <h3>打开 EV 并关闭 GPS 融合</h3>
-            <pre class="code-block"><code>python3 px4_ev_check.py \
-  --address udpin://0.0.0.0:14550 --set-params --duration 5</code></pre>
-            <p>MAVSDK 走 PX4 的 GCS 实例（14550）；ODOMETRY 走 onboard 实例（14580）。两个端口别搞混。</p>
-          </div>
-        </article>
-        <article class="lab-step reveal">
-          <span>03</span>
-          <div>
-            <h3>回放 VIO，注入 1 m 北向斜坡</h3>
-            <pre class="code-block"><code>python3 vio_to_mavlink.py \
-  --est ~/ov_results/v1_01/state_estimate.txt \
-  --address udpout:127.0.0.1:14580 \
-  --mode static --ramp-after 10 \
-  --ramp-north 1.0 --ramp-time 5 --duration 35</code></pre>
-            <p>0–10 s 保持 OpenVINS 第一帧；10–15 s 线性加 1 m North。斜坡是测试信号，用来证明 EKF2 在消费外部视觉，而不是碰巧静止。</p>
-          </div>
-        </article>
-        <article class="lab-step reveal">
-          <span>04</span>
-          <div>
-            <h3>同时看 PX4 的位置与健康</h3>
-            <pre class="code-block"><code>python3 px4_ev_check.py \
-  --address udpin://0.0.0.0:14550 --duration 40</code></pre>
-            <p>重点看 <code>POS N</code> 是否从 0 跟到 1，以及 <code>armable</code> 是否从 False 变 True。</p>
-          </div>
-        </article>
-      </div>
-
-      <div class="matrix-wrap reveal" style="margin-top: 22px;">
-        <table class="matrix">
-          <thead><tr><th scope="col">参数</th><th scope="col">值</th><th scope="col">作用</th></tr></thead>
-          <tbody>
-            <tr><td>EKF2_EV_CTRL</td><td>7</td><td>水平位置 + 垂直位置 + 三维速度；不融合 yaw</td></tr>
-            <tr><td>EKF2_HGT_REF</td><td>3</td><td>高度参考使用 Vision</td></tr>
-            <tr><td>EKF2_GPS_CTRL</td><td>0</td><td>关闭 GPS 融合，逼 EKF2 使用 EV</td></tr>
-            <tr><td>EKF2_EV_DELAY</td><td>0</td><td>台架测试无图像链路延迟</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="callout reveal" style="margin-top: 22px;">
-        <span class="callout-icon" aria-hidden="true">✓</span>
-        <div>
-          <h3>实测记录 · PX4 v1.17 SITL · 2026-11-15</h3>
-          <p>
-            环境：PX4 release/1.17 + Gazebo Harmonic，机型 <code>gz_x500</code>，4 vCPU。
-            注入前 <code>local=True / global=False / armable=False</code>；注入 20 Hz ODOMETRY 后，
-            PX4 local position 的 N 从 0 跟到 <b>1.001 m</b>，E 在斜坡后回到 0.00，D 在 0.23–0.26 m 之间缓慢变化，
-            <code>armable</code> 变为 <b>True</b>。
-          </p>
-          <p>
-            这不是“飞机飞了 1 m”，而是 EKF2 接受了外部视觉并跟随了已知测试信号。
-            仍在地面、未解锁、未起飞；坐标系 yaw、延迟、协方差和失效检测都还没做飞行级验证。
-          </p>
-        </div>
-      </div>
-
-      <div class="callout callout-compact reveal">
-        <span class="callout-icon" aria-hidden="true">!</span>
-        <div>
-          <h3>四个容易踩的坑</h3>
-          <p>
-            1) PX4 SITL 绑定 14580，14540/14550 是它的远端目标；ODOMETRY 要发到 14580。
-            2) ODOMETRY 是 MAVLink 2，pymavlink 默认 v1.0，必须先设 <code>MAVLINK20=1</code>。
-            3) 本测试用 identity 四元数且 <code>EKF2_EV_CTRL=7</code> 不融合 yaw；真实飞行必须处理 body/FRD 与 yaw 对齐。
-            4) VIO 世界系 yaw 是任意的，ENU→NED 只是台架简化；不要拿这个结果当“坐标系已经对了”。
-          </p>
-        </div>
-      </div>
-
       <div class="callout reveal">
         <span class="callout-icon" aria-hidden="true">→</span>
         <div>
-          <h3>下一步：先对齐，再谈系留</h3>
-          <p>
-            位置通道已经能跟住测试信号，但 yaw 融合与真实延迟还没闭环。下面先用离线轨迹做
-            yaw / 时间偏移标定，再从 ULog 里读 EKF innovation；这两步通过后才考虑系留悬停。
-          </p>
+          <h3>Lab 03B · VIO 接入 PX4 外部视觉</h3>
+          <p>MAVLink ODOMETRY、EKF2 EV、yaw/延迟标定、innovation 与位置跳变/EV 丢失测试。</p>
         </div>
-        <a class="btn btn-ghost btn-sm" href={url("/drone/labs/vio/")}>回到 Lab 02</a>
-      </div>
-    </div>
-  </section>
-
-  <section class="section tight">
-    <div class="container">
-      <SectionHead
-        eyebrow="Align"
-        title="Yaw / body：先把参考系统一"
-        lead="EuRoC 的 IMU T_BS 是单位阵，body 就是 IMU；真正要估的是 VIO 世界 yaw 与时间偏移。"
-      />
-      <div class="lab-steps">
-        <article class="lab-step reveal">
-          <span>01</span>
-          <div>
-            <h3>离线估 yaw 与时间偏移</h3>
-            <pre class="code-block"><code>python3 vio_align.py \
-  --est ~/ov_results/v1_01/state_estimate.txt \
-  --gt ~/euroc/mav0/state_groundtruth_estimate0/data.csv</code></pre>
-            <p>脚本扫描 ±250 ms 的时间偏移，取 ATE 最小点；同时用位置拟合和速度方向分别估计 yaw。</p>
-          </div>
-        </article>
-        <article class="lab-step reveal">
-          <span>02</span>
-          <div>
-            <h3>把 yaw 写进桥接脚本</h3>
-            <pre class="code-block"><code>python3 vio_to_mavlink.py \
-  --est ~/ov_results/v1_01/state_estimate.txt \
-  --yaw-offset-deg 13.08 \
-  --mode static --ramp-after 10 \
-  --ramp-north 1.0 --ramp-time 5 --duration 36</code></pre>
-            <p>桥接器先在 VIO 世界系里旋转，再转 ENU→NED；这样斜坡方向也会一起旋转，便于验证。</p>
-          </div>
-        </article>
-      </div>
-
-      <div class="matrix-wrap reveal" style="margin-top: 22px;">
-        <table class="matrix">
-          <thead><tr><th scope="col">项目</th><th scope="col">实测</th><th scope="col">说明</th></tr></thead>
-          <tbody>
-            <tr><td>最佳时间偏移</td><td>+8 ms</td><td>最佳 ATE 0.0594 m；与零偏移差异很小，未观察到明显滞后</td></tr>
-            <tr><td>位置 yaw 偏移</td><td>13.08°</td><td>SE3 位置拟合</td></tr>
-            <tr><td>速度 heading 偏移</td><td>13.29°</td><td>与位置拟合一致，说明是稳定的 yaw 旋转</td></tr>
-            <tr><td>roll / pitch 残差</td><td>0.36° / 0.26°</td><td>重力对齐良好，不需要额外倾斜修正</td></tr>
-            <tr><td>body_T_imu</td><td>I</td><td>EuRoC <code>imu0/sensor.yaml</code>，body = IMU</td></tr>
-            <tr><td>PX4 斜坡末端</td><td>N=0.975 m, E=-0.226 m</td><td>等效 heading -13.05°，与 13.08° 对齐</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="callout callout-compact reveal" style="margin-top: 18px;">
-        <span class="callout-icon" aria-hidden="true">!</span>
-        <div>
-          <h3>为什么还不开 yaw 融合</h3>
-          <p>
-            用 GT 四元数直接比 attitude，会得到与位置/速度不一致的 yaw（EuRoC GT 的 position 与
-            orientation 参考并非完全同一套 yaw）。本 Lab 只对齐位置通道并保持
-            <code>EKF2_EV_CTRL=7</code>；在没搞清 attitude 参考前启用 yaw 融合，可能把错误的
-            heading 灌进 EKF2。位置-only 是可验证的，姿态要先单独做基准测试。
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section tight">
-    <div class="container">
-      <SectionHead
-        eyebrow="Innovation"
-        title="EKF2 到底信了多少？"
-        lead="不要只看 armable。直接读 ULog 里的 EV aid source innovation、test ratio 与 fused/rejected。"
-      />
-      <pre class="code-block"><code>python3 parse_ulog_ev.py ~/px4/build/px4_sitl_default/rootfs/log/.../*.ulg</code></pre>
-      <div class="matrix-wrap reveal">
-        <table class="matrix">
-          <thead><tr><th scope="col">阶段（EV position）</th><th scope="col">|innovation| 均值</th><th scope="col">最大</th><th scope="col">test_ratio 最大</th></tr></thead>
-          <tbody>
-            <tr><td>斜坡前 0–10 s</td><td>0.0001 m</td><td>0.0070 m</td><td>0.000</td></tr>
-            <tr><td>斜坡 10–15 s</td><td>0.1579 m</td><td>0.1885 m</td><td>0.115</td></tr>
-            <tr><td>斜坡后 15–36 s</td><td>0.0078 m</td><td>0.1407 m</td><td>0.073</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="matrix-wrap reveal" style="margin-top: 18px;">
-        <table class="matrix">
-          <thead><tr><th scope="col">通道</th><th scope="col">fused / rejected</th><th scope="col">innovation 均值</th><th scope="col">test_ratio 最大</th></tr></thead>
-          <tbody>
-            <tr><td>EV position</td><td>718 / 0（720 样本）</td><td>x=-0.008 m, y=+0.025 m</td><td>0.115</td></tr>
-            <tr><td>EV height</td><td>718 / 0（720 样本）</td><td>-0.0005 m</td><td>0.002</td></tr>
-            <tr><td>EV velocity</td><td>718 / 0（718 样本）</td><td>-0.005 / -0.006 / -0.001 m/s</td><td>0.389</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="callout reveal" style="margin-top: 18px;">
-        <span class="callout-icon" aria-hidden="true">✓</span>
-        <div>
-          <h3>结论</h3>
-          <p>
-            外部视觉 position / height / velocity 全部被接受，没有一次 innovation rejection；
-            斜坡期间的 0.158 m innovation 是 EKF 对 0.2 m/s 斜坡的合理滞后，test ratio 仍远小于 1。
-            这比“armable=True”更有说服力：说明数据真的进了滤波器，而不是被静默丢弃。
-          </p>
-          <p>
-            延迟方面，离线最佳偏移只有 8 ms，低于 20 Hz 采样周期的一半；本次 PX4 仍用
-            <code>EKF2_EV_DELAY=0</code>。真实相机链路必须用闪光/快速平移测端到端延迟，再把固定延迟写入该参数。
-          </p>
-        </div>
-      </div>
-      <div class="callout reveal">
-        <span class="callout-icon" aria-hidden="true">→</span>
-        <div>
-          <h3>系留悬停前还差什么</h3>
-          <p>
-            位置通道、innovation 与 EV 跳变/丢失行为都已测；还差 yaw 融合的独立基准、真实端到端延迟、
-            外部 VIO 健康监控，以及系留/护网场地与人工接管。不要因为一次地面斜坡跟踪就解锁。
-          </p>
-        </div>
-        <a class="btn btn-ghost btn-sm" href={url("/drone/safety/")}>安全边界</a>
-      </div>
-    </div>
-  </section>
-
-  <section class="section tight">
-    <div class="container">
-      <SectionHead
-        eyebrow="Failure injection"
-        title="EV 跳变与丢失：EKF 会怎么反应？"
-        lead="innovation gate 只拒绝单帧，不等于能挡住持续偏差；EV 丢失也没有专门的“立刻降落”开关。"
-      />
-      <pre class="code-block"><code># 8 s 时注入 3 m 阶跃，保持到 24 s，然后停止桥接器（EV 丢失）
-python3 vio_to_mavlink.py --est ~/ov_results/v1_01/state_estimate.txt \
-  --mode static --ramp-after 8 --ramp-north 3.0 --ramp-time 0.5 \
-  --yaw-offset-deg 13.08 --duration 24
-
-python3 parse_ulog_ev.py &lt;log.ulg&gt; --ramp-start 8 --ramp-end 8.5 --failsafe</code></pre>
-      <div class="matrix-wrap reveal">
-        <table class="matrix">
-          <thead><tr><th scope="col">事件</th><th scope="col">观测</th><th scope="col">含义</th></tr></thead>
-          <tbody>
-            <tr><td>3 m 阶跃（0.5 s）</td><td>11/11 样本 rejected，test_ratio 最大 30.8</td><td>单帧 innovation gate 生效</td></tr>
-            <tr><td>阶跃后约 1 s</td><td><code>reset_count_pos_ne</code> 3→4</td><td>持续偏差触发位置重置，PX4 位置跟到 2.922 m</td></tr>
-            <tr><td>EV 停止（23.16 s）</td><td><code>cs_ev_pos</code> 1→0</td><td>EKF 知道 EV 不再更新</td></tr>
-            <tr><td>EV 停止后 1 s</td><td><code>dead_reckoning</code> 0→1</td><td>进入惯性递推</td></tr>
-            <tr><td>EV 停止后 5 s</td><td><code>xy_valid</code> 1→0</td><td>水平位置不再可信</td></tr>
-            <tr><td>EV 停止后 1.2 s</td><td><code>pos_horiz_accuracy</code> 峰值 14.2 m</td><td>误差估计飙升</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="callout reveal" style="margin-top: 20px;">
-        <span class="callout-icon" aria-hidden="true">!</span>
-        <div>
-          <h3>这不是“EKF 会自动兜底”</h3>
-          <p>
-            3 m 跳变先被 innovation gate 拒绝，但约 1 s 后位置重置还是把估计拉到了新位置。
-            也就是说，持续的 VIO 跳变可以骗过单帧门限。真机必须在伴飞计算机上做独立的跳变检测
-            （位置/速度一致性、innovation 统计、VIO 健康位），不能只依赖 EKF。
-          </p>
-          <p>
-            EV 丢失后 PX4 还能维持约 5 s 的水平位置有效，然后进入 dead reckoning；本次没有找到
-            专门的 EV-loss 立即动作参数。需要在伴飞端监控 <code>cs_ev_pos</code> 与
-            <code>xy_valid</code>，在失效前主动 Hold/Land。
-          </p>
-        </div>
+        <a class="btn btn-ghost btn-sm" href={url("/drone/labs/vio-px4/")}>进入 Lab 03B</a>
       </div>
     </div>
   </section>
@@ -702,7 +427,7 @@ python3 parse_ulog_ev.py &lt;log.ulg&gt; --ramp-start 8 --ramp-end 8.5 --failsaf
       <SectionHead
         eyebrow="Troubleshooting"
         title="常见失败"
-        lead="先证明数据流对，再证明算法对，最后才讨论飞控。"
+        lead="先证明数据流对，再证明算法对；飞控接入的失败模式放到 Lab 03B。"
       />
       <div class="matrix-wrap reveal">
         <table class="matrix failure-table">
@@ -727,11 +452,7 @@ python3 parse_ulog_ev.py &lt;log.ulg&gt; --ramp-start 8 --ramp-end 8.5 --failsaf
             下载：<a href={url("/labs/euroc_to_ros2.py")}>euroc_to_ros2.py</a>、
             <a href={url("/labs/vio_eval.py")}>vio_eval.py</a>、
             <a href={url("/labs/run_openvins_euroc.sh")}>run_openvins_euroc.sh</a>、
-            <a href={url("/labs/run_vins_euroc.sh")}>run_vins_euroc.sh</a>、
-            <a href={url("/labs/vio_to_mavlink.py")}>vio_to_mavlink.py</a>、
-            <a href={url("/labs/px4_ev_check.py")}>px4_ev_check.py</a>、
-            <a href={url("/labs/vio_align.py")}>vio_align.py</a>、
-            <a href={url("/labs/parse_ulog_ev.py")}>parse_ulog_ev.py</a>。
+            <a href={url("/labs/run_vins_euroc.sh")}>run_vins_euroc.sh</a>。
             所有实验仅用于离线数据集与 SITL；真机 VIO 必须先做标定、时间同步与失效检测。
           </p>
         </div>

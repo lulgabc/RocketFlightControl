@@ -149,6 +149,7 @@ export const DRONE_TRACKS: DroneTrack[] = [
       { label: "Lab 01 · PX4 Offboard", href: "/drone/labs/offboard/" },
       { label: "Lab 02 · 外部视觉", href: "/drone/labs/vio/" },
       { label: "Lab 03 · 离线 VIO", href: "/drone/labs/vio-offline/" },
+      { label: "Lab 03B · VIO 接入 PX4", href: "/drone/labs/vio-px4/" },
     ],
     boundaries:
       "本页不提供绕过空域/适航/Remote ID 的方法，也不提供对他人无人机进行干扰、劫持或攻击的操作。真实飞行必须在合法空域、合规设备与当地法规下进行。",

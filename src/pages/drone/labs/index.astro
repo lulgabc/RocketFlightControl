@@ -28,9 +28,16 @@ const labs = [
   {
     index: "03",
     title: "离线 VIO：OpenVINS / VINS-Fusion",
-    detail: "EuRoC 数据集、ROS 2 bag 转换、OpenVINS/VINS-Fusion 轨迹与 ATE/RPE 对比，以及 VIO→PX4 的 yaw/延迟标定、EKF innovation、EV 跳变/丢失与地面静态测试。",
+    detail: "EuRoC 数据集、ROS 2 bag 转换、OpenVINS/VINS-Fusion 轨迹与 ATE/RPE 对比；只证明算法，不接飞控。",
     status: "可开始",
     href: "/drone/labs/vio-offline/",
+  },
+  {
+    index: "03B",
+    title: "VIO 接入 PX4 外部视觉",
+    detail: "MAVLink ODOMETRY、EKF2 EV、yaw/延迟标定、innovation 与位置跳变/EV 丢失测试；仅 SITL/台架。",
+    status: "可开始",
+    href: "/drone/labs/vio-px4/",
   },
   {
     index: "04",
@@ -68,11 +75,11 @@ const labs = [
       <h1>先让它在仿真里<br />飞一个方形。</h1>
       <p>
         这是无人机版块的实践入口。Lab 01 用 PX4 SITL + MAVSDK 完成“连接 → 健康检查 → 起飞 → Offboard 方形 → 降落”，
-        Lab 02/03 再把外部视觉与真实 VIO 算法拆开验证。所有实验先在仿真/台架完成，再考虑真机。
+        Lab 02/03/03B 再把外部视觉、真实 VIO 算法与 PX4 接入拆开验证。所有实验先在仿真/台架完成，再考虑真机。
       </p>
       <div class="page-hero-meta">
         <span>实验 <b>{labs.length} 个</b></span>
-        <span>可开始 <b>4 个</b></span>
+        <span>可开始 <b>5 个</b></span>
         <span>环境 <b>Ubuntu 22.04 / 24.04</b></span>
         <span>仿真 <b>PX4 SITL + Gazebo</b></span>
         <span>接口 <b>MAVSDK / ROS 2</b></span>
@@ -84,8 +91,8 @@ const labs = [
     <div class="container">
       <SectionHead
         eyebrow="Lab roadmap"
-        title="六个实验，从单机到蜂群"
-        lead="Lab 01/01B/02/03 已可复现；其余按“仿真 → 台架 → 真机”的顺序补齐。每个 Lab 都要求可复现、可测量、可失效。"
+        title="七个实验，从单机到蜂群"
+        lead="Lab 01/01B/02/03/03B 已可复现；其余按“仿真 → 台架 → 真机”的顺序补齐。每个 Lab 都要求可复现、可测量、可失效。"
       />
       <div class="build-grid">
         {labs.map((lab) => (

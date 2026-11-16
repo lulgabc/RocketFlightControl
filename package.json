@@ -5,11 +5,17 @@
   "type": "module",
   "description": "火箭飞控系统学习路线图 — 从数值仿真、六自由度建模、控制与估计，到嵌入式飞控与飞行验证的中文自学指南。",
   "scripts": {
+    "predev": "node scripts/check-node.mjs && node scripts/sync-labs.mjs",
     "dev": "astro dev",
     "start": "astro dev",
+    "prebuild": "node scripts/check-node.mjs && node scripts/sync-labs.mjs",
     "build": "astro build",
+    "postbuild": "node scripts/check-links.mjs",
     "preview": "astro preview",
-    "check": "astro check"
+    "precheck": "node scripts/check-node.mjs",
+    "check": "astro check",
+    "sync:labs": "node scripts/sync-labs.mjs",
+    "check:links": "node scripts/check-links.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
@@ -18,5 +24,8 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
     "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=22.23.4"
   }
 }

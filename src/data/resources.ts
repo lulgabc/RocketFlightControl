@@ -114,7 +114,7 @@ export const RESOURCES: Resource[] = [
     level: "核心",
     lang: "英文",
     note: "系统工程实践的免费手册：需求、架构、验证、风险与评审。适合阶段 05 精读。",
-    href: "https://www.nasa.gov/reference/nasa-systems-engineering-handbook/",
+    href: "https://www.nasa.gov/reference/systems-engineering-handbook/",
   },
   {
     title: "星际航行概论",
@@ -159,7 +159,7 @@ export const RESOURCES: Resource[] = [
     level: "进阶",
     lang: "英文",
     note: "面向飞行器的反馈控制：状态空间、观测器、LQR/LQG、鲁棒控制。与飞控高度相关。",
-    href: "https://ocw.mit.edu/courses/16-31-feedback-control-systems-for-unmanned-vehicles-fall-2012/",
+    href: "https://ocw.mit.edu/courses/16-30-feedback-control-systems-fall-2010/",
     featured: true,
   },
   {

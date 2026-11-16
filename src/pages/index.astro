@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import SectionHead from "../components/SectionHead.astro";
-import { SITE, SITE_STATS, PRINCIPLES } from "../lib/site";
+import { SITE, PRINCIPLES } from "../lib/site";
 import { url } from "../lib/url";
 import { PHASES, TOTAL_CHECKPOINTS } from "../data/roadmap";
 import { DOMAINS } from "../data/fundamentals";
@@ -17,6 +17,13 @@ const featuredProjects = ["6dof", "mcu-fc", "sounding"]
 
 const featuredResources = RESOURCES.filter((resource) => resource.featured).slice(0, 4);
 const projectCount = PROJECTS.length;
+const stats = [
+  { value: String(PHASES.length), label: "学习阶段", note: "从数学地基到回收制导" },
+  { value: String(TOTAL_CHECKPOINTS), label: "能力检查点", note: "每一条都能动手验证" },
+  { value: String(projectCount), label: "实践项目", note: "从一维仿真到探空火箭" },
+  { value: String(RESOURCES.length), label: "精选资源", note: "书、课程、开源与标准" },
+  { value: "3+1", label: "交互工具", note: "三个计算器 + 验证选型表" },
+];
 ---
 
 <BaseLayout
@@ -43,7 +50,7 @@ const projectCount = PROJECTS.length;
           <a class="btn btn-ghost" href={url("/projects/")}>先看项目阶梯</a>
         </div>
         <div class="hero-meta">
-          <span>7 个阶段</span>
+          <span>{PHASES.length} 个阶段</span>
           <span>{TOTAL_CHECKPOINTS} 个检查点</span>
           <span>{projectCount} 个实践项目</span>
           <span>业余 18–24 个月</span>
@@ -117,7 +124,7 @@ const projectCount = PROJECTS.length;
   <section class="stats" aria-label="路线图数据">
     <div class="container">
       <div class="stats-grid">
-        {SITE_STATS.map((stat) => (
+        {stats.map((stat) => (
           <div class="stat">
             <div class="stat-value">{stat.value}<span>·</span></div>
             <div class="stat-label">{stat.label}</div>

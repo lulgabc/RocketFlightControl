@@ -159,7 +159,7 @@ export const PHASES: Phase[] = [
     ],
     resources: [
       { label: "MIT 16.06 自动控制原理", href: "https://ocw.mit.edu/courses/16-06-principles-of-automatic-control-fall-2012/" },
-      { label: "MIT 16.31 反馈控制系统", href: "https://ocw.mit.edu/courses/16-31-feedback-control-systems-for-unmanned-vehicles-fall-2012/" },
+      { label: "MIT 16.31 反馈控制系统", href: "https://ocw.mit.edu/courses/16-30-feedback-control-systems-fall-2010/" },
       { label: "Åström & Murray《Feedback Systems》", href: "https://fbswiki.org/" },
       { label: "Beard & McLain《Small Unmanned Aircraft》", href: "https://uavbook.byu.edu/" },
       { label: "Python Control Systems Library", href: "https://python-control.readthedocs.io/" },
@@ -302,7 +302,7 @@ export const PHASES: Phase[] = [
       "能用飞行数据更新模型并量化残差",
     ],
     resources: [
-      { label: "NASA Systems Engineering Handbook", href: "https://www.nasa.gov/reference/nasa-systems-engineering-handbook/" },
+      { label: "NASA Systems Engineering Handbook", href: "https://www.nasa.gov/reference/systems-engineering-handbook/" },
       { label: "ECSS 标准体系", href: "https://ecss.nl/" },
       { label: "FAA Commercial Space Transportation", href: "https://www.faa.gov/space" },
       { label: "NAR 安全规范", href: "https://www.nar.org/" },
