@@ -40,6 +40,7 @@ def main() -> int:
     ap.add_argument("ulog")
     ap.add_argument("--ramp-start", type=float, default=10.0)
     ap.add_argument("--ramp-end", type=float, default=15.0)
+    ap.add_argument("--failsafe", action="store_true", help="print EV loss/jump transitions")
     args = ap.parse_args()
 
     ulog = ULog(args.ulog)
@@ -83,6 +84,35 @@ def main() -> int:
                 f"  innovation[{i}] mean/std/max/p95 = "
                 f"{s[0]:+.4f} {s[1]:.4f} {s[2]:.4f} {s[3]:.4f} | test_ratio max {rr[2]:.3f}"
             )
+
+    if args.failsafe:
+        t0 = t.min()
+        def transitions(data, key, label):
+            a = np.asarray(data.data[key]).astype(int)
+            ts = (np.asarray(data.data["timestamp"], dtype=float) - t0) / 1e6
+            changes = np.where(np.diff(a) != 0)[0]
+            print(f"{label} transitions:")
+            for i in changes:
+                print(f"  {ts[i]:6.2f}s {a[i]} -> {a[i+1]}")
+
+        flags = get(ulog, "estimator_status_flags")
+        transitions(flags, "cs_ev_pos", "cs_ev_pos")
+        local = get(ulog, "vehicle_local_position")
+        for key in ("xy_valid", "v_xy_valid", "dead_reckoning"):
+            transitions(local, key, key)
+        status = get(ulog, "estimator_status")
+        acc = np.asarray(status.data["pos_horiz_accuracy"], dtype=float)
+        acc_t = (np.asarray(status.data["timestamp"], dtype=float) - t0) / 1e6
+        if np.isfinite(acc).any():
+            i = int(np.nanargmax(acc))
+            print(f"pos_horiz_accuracy max {acc[i]:.3f} m at {acc_t[i]:.2f}s")
+        for key in ("reset_count_pos_ne", "reset_count_vel_ne"):
+            a = np.asarray(status.data[key]).astype(int)
+            ts = (np.asarray(status.data["timestamp"], dtype=float) - t0) / 1e6
+            changes = np.where(np.diff(a) != 0)[0]
+            print(f"{key} increments:")
+            for i in changes:
+                print(f"  {ts[i]:6.2f}s {a[i]} -> {a[i+1]}")
     return 0
 
 

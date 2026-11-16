@@ -643,11 +643,56 @@ make px4_sitl gz_x500</code></pre>
         <div>
           <h3>系留悬停前还差什么</h3>
           <p>
-            位置通道与 innovation 已通过；还差 yaw 融合的独立基准、真实端到端延迟、EV 丢失/跳变的
-            failsafe 行为，以及系留/护网场地与人工接管。不要因为一次地面斜坡跟踪就解锁。
+            位置通道、innovation 与 EV 跳变/丢失行为都已测；还差 yaw 融合的独立基准、真实端到端延迟、
+            外部 VIO 健康监控，以及系留/护网场地与人工接管。不要因为一次地面斜坡跟踪就解锁。
           </p>
         </div>
         <a class="btn btn-ghost btn-sm" href={url("/drone/safety/")}>安全边界</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight">
+    <div class="container">
+      <SectionHead
+        eyebrow="Failure injection"
+        title="EV 跳变与丢失：EKF 会怎么反应？"
+        lead="innovation gate 只拒绝单帧，不等于能挡住持续偏差；EV 丢失也没有专门的“立刻降落”开关。"
+      />
+      <pre class="code-block"><code># 8 s 时注入 3 m 阶跃，保持到 24 s，然后停止桥接器（EV 丢失）
+python3 vio_to_mavlink.py --est ~/ov_results/v1_01/state_estimate.txt \
+  --mode static --ramp-after 8 --ramp-north 3.0 --ramp-time 0.5 \
+  --yaw-offset-deg 13.08 --duration 24
+
+python3 parse_ulog_ev.py &lt;log.ulg&gt; --ramp-start 8 --ramp-end 8.5 --failsafe</code></pre>
+      <div class="matrix-wrap reveal">
+        <table class="matrix">
+          <thead><tr><th scope="col">事件</th><th scope="col">观测</th><th scope="col">含义</th></tr></thead>
+          <tbody>
+            <tr><td>3 m 阶跃（0.5 s）</td><td>11/11 样本 rejected，test_ratio 最大 30.8</td><td>单帧 innovation gate 生效</td></tr>
+            <tr><td>阶跃后约 1 s</td><td><code>reset_count_pos_ne</code> 3→4</td><td>持续偏差触发位置重置，PX4 位置跟到 2.922 m</td></tr>
+            <tr><td>EV 停止（23.16 s）</td><td><code>cs_ev_pos</code> 1→0</td><td>EKF 知道 EV 不再更新</td></tr>
+            <tr><td>EV 停止后 1 s</td><td><code>dead_reckoning</code> 0→1</td><td>进入惯性递推</td></tr>
+            <tr><td>EV 停止后 5 s</td><td><code>xy_valid</code> 1→0</td><td>水平位置不再可信</td></tr>
+            <tr><td>EV 停止后 1.2 s</td><td><code>pos_horiz_accuracy</code> 峰值 14.2 m</td><td>误差估计飙升</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout reveal" style="margin-top: 20px;">
+        <span class="callout-icon" aria-hidden="true">!</span>
+        <div>
+          <h3>这不是“EKF 会自动兜底”</h3>
+          <p>
+            3 m 跳变先被 innovation gate 拒绝，但约 1 s 后位置重置还是把估计拉到了新位置。
+            也就是说，持续的 VIO 跳变可以骗过单帧门限。真机必须在伴飞计算机上做独立的跳变检测
+            （位置/速度一致性、innovation 统计、VIO 健康位），不能只依赖 EKF。
+          </p>
+          <p>
+            EV 丢失后 PX4 还能维持约 5 s 的水平位置有效，然后进入 dead reckoning；本次没有找到
+            专门的 EV-loss 立即动作参数。需要在伴飞端监控 <code>cs_ev_pos</code> 与
+            <code>xy_valid</code>，在失效前主动 Hold/Land。
+          </p>
+        </div>
       </div>
     </div>
   </section>
